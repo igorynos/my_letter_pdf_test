@@ -13,6 +13,7 @@ from keyboards.default.cont_user import cont_user_2
 from loader import dp
 from loader import db
 from loader import bot
+from loader import logger
 
 from states.letter import State_list
 
@@ -35,6 +36,8 @@ import re
 from docx2pdf import convert
 import aiohttp
 
+import subprocess
+
 
 class Dict_user:
     dict_user_indx = {}
@@ -50,6 +53,7 @@ async def enter_test(message: types.Message):
 
 @dp.callback_query_handler(template.filter())
 async def letter(call: CallbackQuery, callback_data: dict, state: FSMContext):
+    logger.info(f"нажата кнопка {call}")
     await call.answer(cache_time=60)
     quantity = callback_data.get('name')
 
@@ -73,7 +77,8 @@ async def letter(call: CallbackQuery, callback_data: dict, state: FSMContext):
                             pattern = r'\{\{(.+?)\}\}'
                             matches = re.findall(pattern, text)
                             full_text.extend(matches)
-    print(full_text)
+
+    logger.info(f"запрос прошёл {full_text}")
     await letter_choise_cont_user(message=call.message)
     Dict_user.dict_user_full_text[f'{call.message.chat.id}'] = full_text
     Dict_user.dict_user_call[f'{call.message.chat.id}'] = link_template
@@ -81,6 +86,7 @@ async def letter(call: CallbackQuery, callback_data: dict, state: FSMContext):
 
 @dp.callback_query_handler(letter_cont_user_choise.filter())
 async def letter_2(call: CallbackQuery, callback_data: dict, state: FSMContext):
+    logger.info(f"нажата кнопка 2 {call}")
     await call.answer(cache_time=60)
     quantity = callback_data.get('name')
     sql = f"SELECT * FROM cont_users WHERE name='{quantity}'"
@@ -89,8 +95,6 @@ async def letter_2(call: CallbackQuery, callback_data: dict, state: FSMContext):
     sql = f"SELECT * FROM users WHERE id='{call.message.chat.id}'"
     my_card = db.execute(sql, fetchall=True, commit=True)
     my_card = my_card[0]
-    print(cont_card)
-    print(my_card)
 
     await call.message.answer(text="Письмо создаётся...")
 
@@ -170,5 +174,7 @@ async def letter_3(message: types.Message, state: FSMContext):
                                 search_str, dict_oper[oper])
                     doc.save('modified_output.docx')
                     file = 'modified_output.docx'
-                    convert(file, file[:-5] + ".pdf")
+                    # convert(file, file[:-5] + ".pdf")
+                    command = ['libreoffice', '--convert-to', 'pdf', file]
+                    subprocess.run(command, check=True)
                     await bot.send_document(message.chat.id, open('modified_output.pdf', 'rb'))
