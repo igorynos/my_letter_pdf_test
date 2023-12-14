@@ -1,6 +1,5 @@
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from loader import db
-from keyboards.default.cont_user import cont_user
 
 from keyboards.inline.callback_data import cont_user_choise, change_cont_user_choise, dell_cont_user_choise, letter_cont_user_choise
 
@@ -59,3 +58,26 @@ async def change_cont_card(message: types.Message):
         change_card.add(InlineKeyboardButton(
             text=dict_column_name[f'{x}'], callback_data=change_cont_user_choise.new(name=x)))
     await message.answer("Выберите параметр", reply_markup=change_card)
+
+
+user_button1 = InlineKeyboardButton(
+    text="Добавить получателя", callback_data="Добавить получателя")
+user_button2 = InlineKeyboardButton(
+    text="Удалить получателя", callback_data="Удалить получателя")
+user_button3 = InlineKeyboardButton(text="В начало", callback_data="В начало")
+
+cont_user = InlineKeyboardMarkup().row(
+    user_button1, user_button2).row(user_button3)
+
+
+user2_button1 = InlineKeyboardButton(
+    text="Изменить данные", callback_data="Изменить данные")
+user2_button2 = InlineKeyboardButton(text="В начало", callback_data="В начало")
+
+cont_user_2 = InlineKeyboardMarkup().row(user2_button1).row(user2_button2)
+
+
+nest_pars_button = InlineKeyboardButton(
+    text="Пропустить", callback_data="Пропустить")
+
+nest_pars = InlineKeyboardMarkup().add(nest_pars_button)

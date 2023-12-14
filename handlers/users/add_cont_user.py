@@ -4,20 +4,23 @@ from aiogram import types
 from aiogram.types import CallbackQuery
 from aiogram.dispatcher.filters.builtin import CommandStart
 
-from keyboards.default.cont_user import cont_user_2, nest_pars, cont_user
-
-
 from loader import dp
 from loader import db
 from loader import bot
 
-from keyboards.inline.choise_cont_user import choise_cont_user, change_cont_card, dell_choise_cont_user
-from keyboards.inline.callback_data import change_cont_user_choise, dell_cont_user_choise
+from keyboards.inline.choise_cont_user import dell_choise_cont_user
+from keyboards.inline.callback_data import dell_cont_user_choise
+from keyboards.inline.choise_cont_user import nest_pars, cont_user
 
 
-@dp.message_handler(text='Удалить получателя')
-async def dell_cont_user(message: types.Message):
-    await dell_choise_cont_user(message)
+@dp.callback_query_handler(text='Удалить получателя')
+async def dell_cont_user(call: types.CallbackQuery):
+    await dell_choise_cont_user(call.message)
+
+
+@dp.callback_query_handler(text='Пропустить')
+async def miss(call: types.CallbackQuery):
+    await bot.send_message(chat_id=call.message.chat.id, text="Пропустить")
 
 
 @dp.callback_query_handler(dell_cont_user_choise.filter())
@@ -30,9 +33,9 @@ async def cont_user_card(call: CallbackQuery, callback_data: dict, state: FSMCon
     await bot.send_message(chat_id=call.message.chat.id, text=f"Получатель {quantity} удалён", reply_markup=cont_user)
 
 
-@dp.message_handler(text='Добавить получателя')
-async def add_cont_user_1(message: types.Message, state: FSMContext):
-    await message.answer("Напиши его ФИО", reply_markup=nest_pars)
+@dp.callback_query_handler(text='Добавить получателя')
+async def add_cont_user_1(call: types.CallbackQuery, state: FSMContext):
+    await call.message.answer("Напиши его ФИО", reply_markup=nest_pars)
     await state.set_state("add_cont_user_2")
 
 

@@ -26,3 +26,9 @@ async def change_card(message: types.Message):
         change_card.add(InlineKeyboardButton(
             text=dict_column_name[f'{x}'], callback_data=change_my_card.new(name=x)))
     await message.answer("Выберите параметр", reply_markup=change_card)
+
+
+button1 = InlineKeyboardButton(text='Изменить', callback_data='Изменить')
+button2 = InlineKeyboardButton(text='В начало', callback_data='В начало')
+
+user_card = InlineKeyboardMarkup().add(button1, button2)

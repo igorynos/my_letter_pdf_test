@@ -13,6 +13,7 @@ async def choice(message: types.Message):
     for x in lst_template:
         choice.add(InlineKeyboardButton(
             text=x, callback_data=template.new(name=x)))
+    choice.add(InlineKeyboardButton(text="Отмена", callback_data="В начало"))
     await message.answer("Выберите шаблон", reply_markup=choice)
 
 
@@ -23,4 +24,15 @@ async def delete_choice(message: types.Message):
     for x in lst_template:
         del_choice.add(InlineKeyboardButton(
             text=x, callback_data=del_template.new(name=x)))
+    del_choice.add(InlineKeyboardButton(
+        text="Отмена", callback_data="В начало"))
     await message.answer("Выберите шаблон", reply_markup=del_choice)
+
+
+button1 = InlineKeyboardButton(
+    text="Добавить шаблон", callback_data="Добавить шаблон")
+button2 = InlineKeyboardButton(
+    text="Удалить шаблон", callback_data="Удалить шаблон")
+button3 = InlineKeyboardButton(text="В начало", callback_data="В начало")
+
+menu_template = InlineKeyboardMarkup().add(button1, button2, button3)

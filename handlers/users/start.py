@@ -3,12 +3,7 @@ from aiogram.dispatcher.filters import Command
 from aiogram import types
 from aiogram.types import CallbackQuery
 from aiogram.dispatcher.filters.builtin import CommandStart
-
-from keyboards.default import menu_1
-from keyboards.default.user_card import user_card
-from keyboards.default.template import menu_template
-from keyboards.default.cont_user import cont_user_2
-
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 from loader import dp
 from loader import db
@@ -19,10 +14,14 @@ from states.letter import State_list
 import io
 
 from keyboards.inline.choise_template import choice
+from keyboards.inline.choise_template import menu_template
 from keyboards.inline.choise_template import delete_choice
 from keyboards.inline.change_user_card import change_card
-from keyboards.inline.choise_cont_user import choise_cont_user, change_cont_card
+from keyboards.inline.change_user_card import user_card
+from keyboards.inline.choise_cont_user import choise_cont_user, change_cont_card, nest_pars, cont_user, cont_user_2
 from keyboards.inline.callback_data import template, del_template, change_my_card, cont_user_choise, change_cont_user_choise
+from keyboards.inline.menu_start import menu_start
+
 
 import pymysql
 
@@ -38,7 +37,7 @@ import aiohttp
 
 @dp.message_handler(CommandStart())
 async def bot_start(message: types.Message, state: FSMContext):
-    sql = f"SELECT * FROM users WHERE id = '{message.from_user.id}';"
+    sql = f"SELECT * FROM users WHERE id = '{message.chat.id}';"
     result = db.execute(sql, fetchone=True)
     if result is None:
         await message.answer(f"Привет, {message.from_user.full_name}!")
@@ -48,20 +47,21 @@ async def bot_start(message: types.Message, state: FSMContext):
             db.add_user(id=message.from_user.id, name=name)
         except pymysql.IntegrityError as err:
             print(err)
-
+        print(message)
         await message.answer("Напиши своё ФИО")
         await state.set_state("FIO")
     else:
-        await message.answer(f"Выберите действие", reply_markup=menu_1)
+        await message.answer(f"Выберите действие", reply_markup=menu_start)
+        print(message)
 
 
-@dp.message_handler(text='В начало')
-async def in_start(message: types.Message, state: FSMContext):
-    await bot_start(message=message, state=state)
+@dp.callback_query_handler(text='В начало')
+async def in_start(call: types.CallbackQuery, state: FSMContext):
+    await bot_start(message=call.message, state=state)
 
 
-@dp.message_handler(text='Словарь операндов')
-async def dict_oper(message: types.Message):
+@dp.callback_query_handler(text='Словарь операндов')
+async def dict_oper(call: types.CallbackQuery):
     text = ('{{name}} - Имя пользователя\n\
 {{status}} - Статус пользователя\n\
 {{adress}} - Адресс пользователя\n\
@@ -80,7 +80,7 @@ async def dict_oper(message: types.Message):
 {{cont_pasport}} - Паспорт получателя\n\
 {{cont_born}} - Дата рождения получателя\n\
 {{cont_comment}} - Комментарий получателя')
-    await message.answer(text=text)
+    await call.message.answer(text=text)
 
 
 @dp.message_handler(state="FIO")
@@ -93,7 +93,7 @@ async def enter_name(message: types.Message, state: FSMContext):
         ])
     )
     await state.finish()
-    await message.answer(f"Выберите действие", reply_markup=menu_1)
+    await message.answer(f"Выберите действие", reply_markup=menu_start)
 
 
 @dp.message_handler(text='Создать письмо')
@@ -101,30 +101,30 @@ async def enter_test(message: types.Message):
     await choice(message)
 
 
-@dp.message_handler(text='Получатели')
-async def enter_test(message: types.Message):
-    await choise_cont_user(message)
+@dp.callback_query_handler(text='Получатели')
+async def enter_test(call: types.CallbackQuery):
+    await choise_cont_user(call.message)
 
 
-@dp.message_handler(text='Добавить шаблон')
-async def new_tamplate(message: types.Message, state: FSMContext):
-    await message.answer("Название шаблона")
+@dp.callback_query_handler(text='Добавить шаблон')
+async def new_tamplate(call: types.CallbackQuery, state: FSMContext):
+    await call.message.answer("Название шаблона")
     await state.set_state("name_tamplate")
 
 
-@dp.message_handler(text='Шаблоны')
-async def tamplates(message: types.Message):
-    await bot.send_message(chat_id=message.chat.id, text="Выберите действие", reply_markup=menu_template)
+@dp.callback_query_handler(text='Шаблоны')
+async def tamplates(call: types.CallbackQuery):
+    await bot.send_message(chat_id=call.message.chat.id, text="Выберите действие", reply_markup=menu_template)
 
 
-@dp.message_handler(text='Удалить шаблон')
-async def delete_tamplate(message: types.Message):
-    await delete_choice(message)
+@dp.callback_query_handler(text='Удалить шаблон')
+async def delete_tamplate(call: types.CallbackQuery):
+    await delete_choice(call.message)
 
 
-@dp.message_handler(text='Мои реквизиты')
-async def my_user_card(message: types.Message):
-    sql = f"SELECT * FROM users WHERE id='{message.chat.id}'"
+@dp.callback_query_handler(text='Мои реквизиты')
+async def my_user_card(call: types.CallbackQuery):
+    sql = f"SELECT * FROM users WHERE id='{call.message.chat.id}'"
     my_card = db.execute(sql, fetchall=True, commit=True)
     my_card = my_card[0]
 
@@ -138,7 +138,7 @@ async def my_user_card(message: types.Message):
     Паспорт: {my_card[7]}\n\
     Дата рождения: {my_card[8]}\n\
     Комментарий: {my_card[9]}"
-    await bot.send_message(chat_id=message.chat.id, text=text, reply_markup=user_card)
+    await bot.send_message(chat_id=call.message.chat.id, text=text, reply_markup=user_card)
 
 
 @dp.callback_query_handler(cont_user_choise.filter())
@@ -162,9 +162,9 @@ async def cont_user_card(call: CallbackQuery, callback_data: dict, state: FSMCon
     await bot.send_message(chat_id=call.message.chat.id, text=text, reply_markup=cont_user_2)
 
 
-@dp.message_handler(text='Изменить')
-async def my_user_card_2(message: types.Message):
-    await change_card(message)
+@dp.callback_query_handler(text='Изменить')
+async def my_user_card_2(call: types.CallbackQuery):
+    await change_card(call.message)
 
 
 @dp.message_handler(text='Изменить данные')
@@ -193,26 +193,6 @@ async def link_template(message: types.Message, state: FSMContext):
     link_template = message.text
     link_template = link_template.replace("/edit", "/export?format=docx")
 
-    # response = urllib.request.urlopen(link_template)
-    # # Открытие потока байтов и создание объекта docx.Document
-    # async with aiohttp.ClientSession() as session:
-    #     async with session.get(link_template) as response:
-    #         if response.status == 200:
-    #             content = await response.read()
-
-    #             # Use io.BytesIO to create a bytes stream from content
-    #             with io.BytesIO(content) as f:
-    #                 doc = docx.Document(f)
-
-    #                 # Continue with your code to process the doc
-    #                 full_text = []
-    #                 for paragraph in doc.paragraphs:
-    #                     if '{{' in paragraph.text:
-    #                         text = paragraph.text
-    #                         pattern = r'\{\{(.+?)\}\}'
-    #                         matches = re.findall(pattern, text)
-    #                         full_text.extend(matches)
-
     db.add_template(name=name, link=link_template, oper='')
 
     await state.finish()
@@ -227,6 +207,7 @@ async def letter(call: CallbackQuery, callback_data: dict, state: FSMContext):
     sql = f"DELETE FROM template WHERE name = '{quantity}'"
     db.execute(sql, fetchall=True, commit=True)
     await call.message.answer(text=f'Шаблон {quantity} удалён')
+    await tamplates(call=call)
 
 
 @dp.callback_query_handler(change_my_card.filter())
@@ -278,7 +259,10 @@ async def change_card_3(message: types.Message, state: FSMContext):
     db.execute(sql, fetchone=True, commit=True)
     await state.finish()
     await message.answer(f"{dict_column_name[f'{answer1}']}")
-    await my_user_card(message)
+
+    call = CallbackQuery()
+    call['message'] = message
+    await my_user_card(call)
 
 
 @dp.message_handler(state="change_cont_card_3")

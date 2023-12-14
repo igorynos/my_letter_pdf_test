@@ -4,25 +4,22 @@ from aiogram import types
 from aiogram.types import CallbackQuery
 from aiogram.dispatcher.filters.builtin import CommandStart
 
-from keyboards.default import menu_1
-from keyboards.default.user_card import user_card
-from keyboards.default.template import menu_template
-from keyboards.default.cont_user import cont_user_2
-
 
 from loader import dp
 from loader import db
 from loader import bot
+# from loader import logger
 
 from states.letter import State_list
 
 import io
 
+
+from keyboards.inline.callback_data import template
+from keyboards.inline.menu_start import menu_start
 from keyboards.inline.choise_template import choice
-from keyboards.inline.choise_template import delete_choice
-from keyboards.inline.change_user_card import change_card
-from keyboards.inline.choise_cont_user import choise_cont_user, change_cont_card, letter_choise_cont_user
-from keyboards.inline.callback_data import template, del_template, change_my_card, cont_user_choise, change_cont_user_choise, letter_cont_user_choise
+from keyboards.inline.choise_cont_user import letter_choise_cont_user
+from keyboards.inline.callback_data import template, letter_cont_user_choise
 
 import pymysql
 
@@ -35,21 +32,42 @@ import re
 from docx2pdf import convert
 import aiohttp
 
+import subprocess
+
 
 class Dict_user:
     dict_user_indx = {}
     dict_user_full_text = {}
     dict_user_answer = {}
     dict_user_call = {}
+    dict_column_name = {"name": f'имя пользователя',
+                        "status": f'статус пользователя',
+                        "adress": f'адресс пользователя',
+                        "phone": f'телефон пользователя',
+                        "email": f'email пользователя',
+                        "inn": f'ИНН пользователя',
+                        "pasport": f'пасспорт пользователя',
+                        "born": f'дату рождения пользователя',
+                        "comment": f'комментарий пользователя',
+                        "cont_name": f'имя получателя',
+                        "cont_status": f'статус получателя',
+                        "cont_adress": f'адрес получчателя',
+                        "cont_phone": f'телефон получателя',
+                        "cont_email": f'email получателя',
+                        "cont_inn": f'ИНН получателя',
+                        "cont_pasport": f'паспорт получателя',
+                        "cont_born": f'дату рождения получателя',
+                        "cont_comment": f'комментарий получателя'}
 
 
-@dp.message_handler(text='Создать письмо')
-async def enter_test(message: types.Message):
-    await choice(message)
+@dp.callback_query_handler(text='Создать письмо')
+async def enter_test(call: CallbackQuery):
+    await choice(call.message)
 
 
 @dp.callback_query_handler(template.filter())
 async def letter(call: CallbackQuery, callback_data: dict, state: FSMContext):
+    # logger.info(f"нажата кнопка {call}")
     await call.answer(cache_time=60)
     quantity = callback_data.get('name')
 
@@ -73,7 +91,8 @@ async def letter(call: CallbackQuery, callback_data: dict, state: FSMContext):
                             pattern = r'\{\{(.+?)\}\}'
                             matches = re.findall(pattern, text)
                             full_text.extend(matches)
-    print(full_text)
+
+    # logger.info(f"запрос прошёл {full_text}")
     await letter_choise_cont_user(message=call.message)
     Dict_user.dict_user_full_text[f'{call.message.chat.id}'] = full_text
     Dict_user.dict_user_call[f'{call.message.chat.id}'] = link_template
@@ -81,6 +100,7 @@ async def letter(call: CallbackQuery, callback_data: dict, state: FSMContext):
 
 @dp.callback_query_handler(letter_cont_user_choise.filter())
 async def letter_2(call: CallbackQuery, callback_data: dict, state: FSMContext):
+    # logger.info(f"нажата кнопка 2 {call}")
     await call.answer(cache_time=60)
     quantity = callback_data.get('name')
     sql = f"SELECT * FROM cont_users WHERE name='{quantity}'"
@@ -89,29 +109,6 @@ async def letter_2(call: CallbackQuery, callback_data: dict, state: FSMContext):
     sql = f"SELECT * FROM users WHERE id='{call.message.chat.id}'"
     my_card = db.execute(sql, fetchall=True, commit=True)
     my_card = my_card[0]
-    print(cont_card)
-    print(my_card)
-
-    await call.message.answer(text="Письмо создаётся...")
-
-    dict_column_name = {"name": f'Имя пользователя',
-                        "status": f'Статус пользователя',
-                        "adress": f'Адресс пользователя',
-                        "phone": f'Телефон пользователя',
-                        "email": f'Email пользователя',
-                        "inn": f'ИНН пользователя',
-                        "pasport": f'Пасспорт пользователя',
-                        "born": f'Дата рождения пользователя',
-                        "comment": f'Комментарий пользователя',
-                        "cont_name": f'Имя получателя',
-                        "cont_status": f'Статус получателя',
-                        "cont_adress": f'Адрес получчателя',
-                        "cont_phone": f'Телефон получателя',
-                        "cont_email": f'Email получателя',
-                        "cont_inn": f'ИНН получателя',
-                        "cont_pasport": f'Паспорт получателя',
-                        "cont_born": f'Дата рождения получателя',
-                        "cont_comment": f'Комментарий получателя'}
 
     dict_oper = {"name": f'{my_card[1]}',
                  "status": f'{my_card[2]}',
@@ -143,8 +140,9 @@ async def letter_2(call: CallbackQuery, callback_data: dict, state: FSMContext):
         }
     )
     if len(lst_none) != 0:
-        await letter_3(message=call.message, state=state)
+        await user_none(message=call.message, state=state)
     else:
+        await call.message.answer(text="Письмо создаётся...")
         await letter_3(message=call.message, state=state)
 
 
@@ -171,4 +169,280 @@ async def letter_3(message: types.Message, state: FSMContext):
                     doc.save('modified_output.docx')
                     file = 'modified_output.docx'
                     convert(file, file[:-5] + ".pdf")
+                    # command = ['libreoffice', '--convert-to', 'pdf', file]
+                    # subprocess.run(command, check=True)
                     await bot.send_document(message.chat.id, open('modified_output.pdf', 'rb'))
+                    await message.answer(text=f'Выберите действие', reply_markup=menu_start)
+
+
+async def user_none(message: types.Message, state: FSMContext):
+    data = await state.get_data()
+    Dict_user.dict_user_full_text[f'{message.chat.id}'] = data['lst_none']
+    Dict_user.dict_user_indx[f"{message.chat.id}"] = 0
+    numb_0 = data['lst_none'][0]
+    await message.answer(text=f'Введите {Dict_user.dict_column_name[f"{numb_0}"]}')
+    await State_list.first()
+
+
+@dp.message_handler(state=State_list.Q0)
+async def answer_lst(message: types.Message, state: FSMContext):
+    user_id = Dict_user.dict_user_indx[f"{message.chat.id}"]
+    user_text = Dict_user.dict_user_full_text[f'{message.chat.id}']
+    oper = user_text[user_id]
+
+    if 'cont_' in oper:
+        oper = oper.replace("cont_", "")
+        sql = f"UPDATE cont_users SET {oper}=%s WHERE user=%s;"
+        db.execute(sql, parameters=(
+            message.text, message.chat.id), commit=True)
+    else:
+        sql = f"UPDATE users SET {oper}=%s WHERE id=%s;"
+        db.execute(sql, parameters=(
+            message.text, message.chat.id), commit=True)
+
+    try:
+        Dict_user.dict_user_indx[f"{message.from_user.id}"] += 1
+        await message.answer(f"Напиши {user_text[user_id+1]}")
+        await State_list.next()
+    except:
+        letter_3(message=message, state=state)
+
+
+@dp.message_handler(state=State_list.Q1)
+async def answer_lst(message: types.Message, state: FSMContext):
+    user_id = Dict_user.dict_user_indx[f"{message.chat.id}"]
+    user_text = Dict_user.dict_user_full_text[f'{message.chat.id}']
+    oper = user_text[user_id]
+
+    if 'cont_' in oper:
+        oper = oper.replace("cont_", "")
+        sql = f"UPDATE cont_users SET {oper}=%s WHERE user=%s;"
+        db.execute(sql, parameters=(
+            message.text, message.chat.id), commit=True)
+    else:
+        sql = f"UPDATE users SET {oper}=%s WHERE id=%s;"
+        db.execute(sql, parameters=(
+            message.text, message.chat.id), commit=True)
+
+    try:
+        Dict_user.dict_user_indx[f"{message.from_user.id}"] += 1
+        await message.answer(f"Напиши {user_text[user_id+1]}")
+        await State_list.next()
+    except:
+        letter_3(message=message, state=state)
+
+
+@dp.message_handler(state=State_list.Q2)
+async def answer_lst(message: types.Message, state: FSMContext):
+    user_id = Dict_user.dict_user_indx[f"{message.chat.id}"]
+    user_text = Dict_user.dict_user_full_text[f'{message.chat.id}']
+    oper = user_text[user_id]
+
+    if 'cont_' in oper:
+        oper = oper.replace("cont_", "")
+        sql = f"UPDATE cont_users SET {oper}=%s WHERE user=%s;"
+        db.execute(sql, parameters=(
+            message.text, message.chat.id), commit=True)
+    else:
+        sql = f"UPDATE users SET {oper}=%s WHERE id=%s;"
+        db.execute(sql, parameters=(
+            message.text, message.chat.id), commit=True)
+
+    try:
+        Dict_user.dict_user_indx[f"{message.from_user.id}"] += 1
+        await message.answer(f"Напиши {user_text[user_id+1]}")
+        await State_list.next()
+    except:
+        letter_3(message=message, state=state)
+
+
+@dp.message_handler(state=State_list.Q3)
+async def answer_lst(message: types.Message, state: FSMContext):
+    user_id = Dict_user.dict_user_indx[f"{message.chat.id}"]
+    user_text = Dict_user.dict_user_full_text[f'{message.chat.id}']
+    oper = user_text[user_id]
+
+    if 'cont_' in oper:
+        oper = oper.replace("cont_", "")
+        sql = f"UPDATE cont_users SET {oper}=%s WHERE user=%s;"
+        db.execute(sql, parameters=(
+            message.text, message.chat.id), commit=True)
+    else:
+        sql = f"UPDATE users SET {oper}=%s WHERE id=%s;"
+        db.execute(sql, parameters=(
+            message.text, message.chat.id), commit=True)
+
+    try:
+        Dict_user.dict_user_indx[f"{message.from_user.id}"] += 1
+        await message.answer(f"Напиши {user_text[user_id+1]}")
+        await State_list.next()
+    except:
+        letter_3(message=message, state=state)
+
+
+@dp.message_handler(state=State_list.Q4)
+async def answer_lst(message: types.Message, state: FSMContext):
+    user_id = Dict_user.dict_user_indx[f"{message.chat.id}"]
+    user_text = Dict_user.dict_user_full_text[f'{message.chat.id}']
+    oper = user_text[user_id]
+
+    if 'cont_' in oper:
+        oper = oper.replace("cont_", "")
+        sql = f"UPDATE cont_users SET {oper}=%s WHERE user=%s;"
+        db.execute(sql, parameters=(
+            message.text, message.chat.id), commit=True)
+    else:
+        sql = f"UPDATE users SET {oper}=%s WHERE id=%s;"
+        db.execute(sql, parameters=(
+            message.text, message.chat.id), commit=True)
+
+    try:
+        Dict_user.dict_user_indx[f"{message.from_user.id}"] += 1
+        await message.answer(f"Напиши {user_text[user_id+1]}")
+        await State_list.next()
+    except:
+        letter_3(message=message, state=state)
+
+
+@dp.message_handler(state=State_list.Q5)
+async def answer_lst(message: types.Message, state: FSMContext):
+    user_id = Dict_user.dict_user_indx[f"{message.chat.id}"]
+    user_text = Dict_user.dict_user_full_text[f'{message.chat.id}']
+    oper = user_text[user_id]
+
+    if 'cont_' in oper:
+        oper = oper.replace("cont_", "")
+        sql = f"UPDATE cont_users SET {oper}=%s WHERE user=%s;"
+        db.execute(sql, parameters=(
+            message.text, message.chat.id), commit=True)
+    else:
+        sql = f"UPDATE users SET {oper}=%s WHERE id=%s;"
+        db.execute(sql, parameters=(
+            message.text, message.chat.id), commit=True)
+
+    try:
+        Dict_user.dict_user_indx[f"{message.from_user.id}"] += 1
+        await message.answer(f"Напиши {user_text[user_id+1]}")
+        await State_list.next()
+    except:
+        letter_3(message=message, state=state)
+
+
+@dp.message_handler(state=State_list.Q6)
+async def answer_lst(message: types.Message, state: FSMContext):
+    user_id = Dict_user.dict_user_indx[f"{message.chat.id}"]
+    user_text = Dict_user.dict_user_full_text[f'{message.chat.id}']
+    oper = user_text[user_id]
+
+    if 'cont_' in oper:
+        oper = oper.replace("cont_", "")
+        sql = f"UPDATE cont_users SET {oper}=%s WHERE user=%s;"
+        db.execute(sql, parameters=(
+            message.text, message.chat.id), commit=True)
+    else:
+        sql = f"UPDATE users SET {oper}=%s WHERE id=%s;"
+        db.execute(sql, parameters=(
+            message.text, message.chat.id), commit=True)
+
+    try:
+        Dict_user.dict_user_indx[f"{message.from_user.id}"] += 1
+        await message.answer(f"Напиши {user_text[user_id+1]}")
+        await State_list.next()
+    except:
+        letter_3(message=message, state=state)
+
+
+@dp.message_handler(state=State_list.Q7)
+async def answer_lst(message: types.Message, state: FSMContext):
+    user_id = Dict_user.dict_user_indx[f"{message.chat.id}"]
+    user_text = Dict_user.dict_user_full_text[f'{message.chat.id}']
+    oper = user_text[user_id]
+
+    if 'cont_' in oper:
+        oper = oper.replace("cont_", "")
+        sql = f"UPDATE cont_users SET {oper}=%s WHERE user=%s;"
+        db.execute(sql, parameters=(
+            message.text, message.chat.id), commit=True)
+    else:
+        sql = f"UPDATE users SET {oper}=%s WHERE id=%s;"
+        db.execute(sql, parameters=(
+            message.text, message.chat.id), commit=True)
+
+    try:
+        Dict_user.dict_user_indx[f"{message.from_user.id}"] += 1
+        await message.answer(f"Напиши {user_text[user_id+1]}")
+        await State_list.next()
+    except:
+        letter_3(message=message, state=state)
+
+
+@dp.message_handler(state=State_list.Q8)
+async def answer_lst(message: types.Message, state: FSMContext):
+    user_id = Dict_user.dict_user_indx[f"{message.chat.id}"]
+    user_text = Dict_user.dict_user_full_text[f'{message.chat.id}']
+    oper = user_text[user_id]
+
+    if 'cont_' in oper:
+        oper = oper.replace("cont_", "")
+        sql = f"UPDATE cont_users SET {oper}=%s WHERE user=%s;"
+        db.execute(sql, parameters=(
+            message.text, message.chat.id), commit=True)
+    else:
+        sql = f"UPDATE users SET {oper}=%s WHERE id=%s;"
+        db.execute(sql, parameters=(
+            message.text, message.chat.id), commit=True)
+
+    try:
+        Dict_user.dict_user_indx[f"{message.from_user.id}"] += 1
+        await message.answer(f"Напиши {user_text[user_id+1]}")
+        await State_list.next()
+    except:
+        letter_3(message=message, state=state)
+
+
+@dp.message_handler(state=State_list.Q9)
+async def answer_lst(message: types.Message, state: FSMContext):
+    user_id = Dict_user.dict_user_indx[f"{message.chat.id}"]
+    user_text = Dict_user.dict_user_full_text[f'{message.chat.id}']
+    oper = user_text[user_id]
+
+    if 'cont_' in oper:
+        oper = oper.replace("cont_", "")
+        sql = f"UPDATE cont_users SET {oper}=%s WHERE user=%s;"
+        db.execute(sql, parameters=(
+            message.text, message.chat.id), commit=True)
+    else:
+        sql = f"UPDATE users SET {oper}=%s WHERE id=%s;"
+        db.execute(sql, parameters=(
+            message.text, message.chat.id), commit=True)
+
+    try:
+        Dict_user.dict_user_indx[f"{message.from_user.id}"] += 1
+        await message.answer(f"Напиши {user_text[user_id+1]}")
+        await State_list.next()
+    except:
+        letter_3(message=message, state=state)
+
+
+@dp.message_handler(state=State_list.Q10)
+async def answer_lst(message: types.Message, state: FSMContext):
+    user_id = Dict_user.dict_user_indx[f"{message.chat.id}"]
+    user_text = Dict_user.dict_user_full_text[f'{message.chat.id}']
+    oper = user_text[user_id]
+
+    if 'cont_' in oper:
+        oper = oper.replace("cont_", "")
+        sql = f"UPDATE cont_users SET {oper}=%s WHERE user=%s;"
+        db.execute(sql, parameters=(
+            message.text, message.chat.id), commit=True)
+    else:
+        sql = f"UPDATE users SET {oper}=%s WHERE id=%s;"
+        db.execute(sql, parameters=(
+            message.text, message.chat.id), commit=True)
+
+    try:
+        Dict_user.dict_user_indx[f"{message.from_user.id}"] += 1
+        await message.answer(f"Напиши {user_text[user_id+1]}")
+        await State_list.next()
+    except:
+        letter_3(message=message, state=state)
