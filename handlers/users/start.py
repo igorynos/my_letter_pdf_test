@@ -34,6 +34,8 @@ import re
 from docx2pdf import convert
 import aiohttp
 
+dict_temp = {}
+
 
 @dp.message_handler(CommandStart())
 async def bot_start(message: types.Message, state: FSMContext):
@@ -47,12 +49,10 @@ async def bot_start(message: types.Message, state: FSMContext):
             db.add_user(id=message.from_user.id, name=name)
         except pymysql.IntegrityError as err:
             print(err)
-        print(message)
         await message.answer("Напиши своё ФИО")
         await state.set_state("FIO")
     else:
-        await message.answer(f"Выберите действие", reply_markup=menu_start)
-        print(message)
+        await message.answer(f"Выберите действие:", reply_markup=menu_start)
 
 
 @dp.callback_query_handler(text='В начало')
@@ -73,14 +73,14 @@ async def dict_oper(call: types.CallbackQuery):
 {{comment}} - Комментарий пользователя\n\
 {{cont_name}} - Имя получателя\n\
 {{cont_status}} - Статус получателя\n\
-{{cont_adress}} - Адрес получчателя\n\
+{{cont_adress}} - Адрес получателя\n\
 {{cont_phone}} - Телефон получателя\n\
 {{cont_email}} - Email получателя\n\
 {{cont_inn}} - ИНН получателя\n\
 {{cont_pasport}} - Паспорт получателя\n\
 {{cont_born}} - Дата рождения получателя\n\
 {{cont_comment}} - Комментарий получателя')
-    await call.message.answer(text=text)
+    await call.message.answer(text=text, reply_markup=menu_start)
 
 
 @dp.message_handler(state="FIO")
@@ -93,7 +93,7 @@ async def enter_name(message: types.Message, state: FSMContext):
         ])
     )
     await state.finish()
-    await message.answer(f"Выберите действие", reply_markup=menu_start)
+    await message.answer(f"Выберите действие:", reply_markup=menu_start)
 
 
 @dp.message_handler(text='Создать письмо')
@@ -129,15 +129,15 @@ async def my_user_card(call: types.CallbackQuery):
     my_card = my_card[0]
 
     text = f"Ваши реквизиты:\n\n\
-    ФИО: {my_card[1]}\n\
-    Статус: {my_card[2]}\n\
-    Адрес: {my_card[3]}\n\
-    Тел: {my_card[4]}\n\
-    Email: {my_card[5]}\n\
-    ИНН: {my_card[6]}\n\
-    Паспорт: {my_card[7]}\n\
-    Дата рождения: {my_card[8]}\n\
-    Комментарий: {my_card[9]}"
+ФИО: {my_card[1]}\n\
+Статус: {my_card[2]}\n\
+Адрес: {my_card[3]}\n\
+Тел: {my_card[4]}\n\
+Email: {my_card[5]}\n\
+ИНН: {my_card[6]}\n\
+Паспорт: {my_card[7]}\n\
+Дата рождения: {my_card[8]}\n\
+Комментарий: {my_card[9]}"
     await bot.send_message(chat_id=call.message.chat.id, text=text, reply_markup=user_card)
 
 
@@ -148,17 +148,18 @@ async def cont_user_card(call: CallbackQuery, callback_data: dict, state: FSMCon
     sql = f"SELECT * FROM cont_users WHERE name='{quantity}'"
     my_card = db.execute(sql, fetchall=True, commit=True)
     my_card = my_card[0]
+    dict_temp[f'{call.message.chat.id}'] = quantity
 
     text = f"Реквизиты получателя:\n\n\
-    ФИО: {my_card[0]}\n\
-    Статус: {my_card[1]}\n\
-    Адрес: {my_card[2]}\n\
-    Тел: {my_card[3]}\n\
-    Email: {my_card[4]}\n\
-    ИНН: {my_card[5]}\n\
-    Паспорт: {my_card[6]}\n\
-    Дата рождения: {my_card[7]}\n\
-    Комментарий: {my_card[8]}"
+ФИО: {my_card[0]}\n\
+Статус: {my_card[1]}\n\
+Адрес: {my_card[2]}\n\
+Тел: {my_card[3]}\n\
+Email: {my_card[4]}\n\
+ИНН: {my_card[5]}\n\
+Паспорт: {my_card[6]}\n\
+Дата рождения: {my_card[7]}\n\
+Комментарий: {my_card[8]}"
     await bot.send_message(chat_id=call.message.chat.id, text=text, reply_markup=cont_user_2)
 
 
@@ -167,9 +168,9 @@ async def my_user_card_2(call: types.CallbackQuery):
     await change_card(call.message)
 
 
-@dp.message_handler(text='Изменить данные')
-async def cont_user_card_2(message: types.Message):
-    await change_cont_card(message)
+@dp.callback_query_handler(text='Изменить данные')
+async def cont_user_card_2(call: types.CallbackQuery):
+    await change_cont_card(call.message, dict_temp[f'{call.message.chat.id}'])
 
 
 @dp.message_handler(state="name_tamplate")
@@ -228,11 +229,13 @@ async def change_card_2(call: CallbackQuery, callback_data: dict, state: FSMCont
 @dp.callback_query_handler(change_cont_user_choise.filter())
 async def change_cont_card_2(call: CallbackQuery, callback_data: dict, state: FSMContext):
     await call.answer(cache_time=60)
-    quantity = callback_data.get('name')
+    quantity = callback_data.get('parametr')
+    name = callback_data.get('name')
 
     await state.update_data(
         {
-            f'answer': quantity
+            f'answer': quantity,
+            f'name': name
         }
     )
 
@@ -269,6 +272,7 @@ async def change_card_3(message: types.Message, state: FSMContext):
 async def change_cont_card_3(message: types.Message, state: FSMContext):
     data = await state.get_data()
     answer1 = data.get("answer")
+    name = data.get("name")
     answer2 = message.text
     dict_column_name = {"name": 'ФИО изменено',
                         "status": 'Статус изменен',
@@ -280,306 +284,8 @@ async def change_cont_card_3(message: types.Message, state: FSMContext):
                         "born": 'Дата рождения изменено',
                         "comment": 'Коментарий изменен'}
 
-    sql = f"UPDATE cont_users SET {answer1} = '{answer2}' WHERE user = {message.chat.id}"
-    db.execute(sql, fetchone=True, commit=True)
+    sql = f"UPDATE cont_users SET {answer1} = '{answer2}' WHERE user = %s AND name = %s"
+    db.execute(sql, parameters=(message.chat.id, name),
+               fetchall=True, commit=True)
     await state.finish()
     await message.answer(f"{dict_column_name[f'{answer1}']}", reply_markup=cont_user_2)
-
-
-# @dp.message_handler(text="Письмо создаётся...")
-# async def get_pdf(message: types.Message, state: FSMContext):
-#     link_template = Dict_user.dict_user_call[f'{message.from_user.id}']
-
-#     response = urllib.request.urlopen(link_template)
-#     async with aiohttp.ClientSession() as session:
-#         async with session.get(link_template) as response:
-#             if response.status == 200:
-#                 content = await response.read()
-
-#                 with io.BytesIO(content) as f:
-#                     doc = docx.Document(f)
-
-#                     for oper in Dict_user.dict_user_answer[f'{message.from_user.id}'].items():
-#                         for paragraph in doc.paragraphs:
-#                             text = paragraph.text
-#                             search_str = f'{{{{{oper[0]}}}}}'
-#                             paragraph.text = text.replace(search_str, oper[1])
-#                     doc.save('modified_output.docx')
-#                     file = 'modified_output.docx'
-#                     convert(file, file[:-5] + ".pdf")
-#                     await bot.send_document(message.chat.id, open('modified_output.pdf', 'rb'))
-
-
-# @dp.message_handler(state=State_list.Q0)
-# async def answer_lst(message: types.Message, state: FSMContext):
-#     user_id = Dict_user.dict_user_indx[f"{message.from_user.id}"]
-#     user_text = Dict_user.dict_user_full_text[f'{message.from_user.id}']
-
-#     answer = message.text
-
-#     await state.update_data(
-#         {
-#             f'{user_text[user_id]}': answer
-#         }
-#     )
-
-#     try:
-#         Dict_user.dict_user_indx[f"{message.from_user.id}"] += 1
-#         await message.answer(f"Напиши {user_text[user_id+1]}")
-#         await State_list.next()
-#     except:
-#         data = await state.get_data()
-#         Dict_user.dict_user_answer[f'{message.from_user.id}'] = data
-#         await state.finish()
-#         await message.answer(text="Письмо создаётся...")
-#         await get_pdf(message=message, state=FSMContext)
-
-
-# @dp.message_handler(state=State_list.Q1)
-# async def answer_lst(message: types.Message, state: FSMContext):
-#     user_id = Dict_user.dict_user_indx[f"{message.from_user.id}"]
-#     user_text = Dict_user.dict_user_full_text[f'{message.from_user.id}']
-
-#     answer = message.text
-
-#     await state.update_data(
-#         {
-#             f'{user_text[user_id]}': answer
-#         }
-#     )
-
-#     try:
-#         Dict_user.dict_user_indx[f"{message.from_user.id}"] += 1
-#         await message.answer(f"Напиши {user_text[user_id+1]}")
-#         await State_list.next()
-#     except:
-#         data = await state.get_data()
-#         Dict_user.dict_user_answer[f'{message.from_user.id}'] = data
-#         await state.finish()
-#         await message.answer(text="Письмо создаётся...")
-#         await get_pdf(message=message, state=FSMContext)
-
-
-# @dp.message_handler(state=State_list.Q2)
-# async def answer_lst(message: types.Message, state: FSMContext):
-#     user_id = Dict_user.dict_user_indx[f"{message.from_user.id}"]
-#     user_text = Dict_user.dict_user_full_text[f'{message.from_user.id}']
-
-#     answer = message.text
-
-#     await state.update_data(
-#         {
-#             f'{user_text[user_id]}': answer
-#         }
-#     )
-
-#     try:
-#         Dict_user.dict_user_indx[f"{message.from_user.id}"] += 1
-#         await message.answer(f"Напиши {user_text[user_id+1]}")
-#         await State_list.next()
-#     except:
-#         data = await state.get_data()
-#         Dict_user.dict_user_answer[f'{message.from_user.id}'] = data
-#         await state.finish()
-#         await message.answer(text="Письмо создаётся...")
-#         await get_pdf(message=message, state=FSMContext)
-
-
-# @dp.message_handler(state=State_list.Q3)
-# async def answer_lst(message: types.Message, state: FSMContext):
-#     user_id = Dict_user.dict_user_indx[f"{message.from_user.id}"]
-#     user_text = Dict_user.dict_user_full_text[f'{message.from_user.id}']
-
-#     answer = message.text
-
-#     await state.update_data(
-#         {
-#             f'{user_text[user_id]}': answer
-#         }
-#     )
-
-#     try:
-#         Dict_user.dict_user_indx[f"{message.from_user.id}"] += 1
-#         await message.answer(f"Напиши {user_text[user_id+1]}")
-#         await State_list.next()
-#     except:
-#         data = await state.get_data()
-#         Dict_user.dict_user_answer[f'{message.from_user.id}'] = data
-#         await state.finish()
-#         await message.answer(text="Письмо создаётся...")
-#         await get_pdf(message=message, state=FSMContext)
-
-
-# @dp.message_handler(state=State_list.Q4)
-# async def answer_lst(message: types.Message, state: FSMContext):
-#     user_id = Dict_user.dict_user_indx[f"{message.from_user.id}"]
-#     user_text = Dict_user.dict_user_full_text[f'{message.from_user.id}']
-
-#     answer = message.text
-
-#     await state.update_data(
-#         {
-#             f'{user_text[user_id]}': answer
-#         }
-#     )
-
-#     try:
-#         Dict_user.dict_user_indx[f"{message.from_user.id}"] += 1
-#         await message.answer(f"Напиши {user_text[user_id+1]}")
-#         await State_list.next()
-#     except:
-#         data = await state.get_data()
-#         Dict_user.dict_user_answer[f'{message.from_user.id}'] = data
-#         await state.finish()
-#         await message.answer(text="Письмо создаётся...")
-#         await get_pdf(message=message, state=FSMContext)
-
-
-# @dp.message_handler(state=State_list.Q5)
-# async def answer_lst(message: types.Message, state: FSMContext):
-#     user_id = Dict_user.dict_user_indx[f"{message.from_user.id}"]
-#     user_text = Dict_user.dict_user_full_text[f'{message.from_user.id}']
-
-#     answer = message.text
-
-#     await state.update_data(
-#         {
-#             f'{user_text[user_id]}': answer
-#         }
-#     )
-
-#     try:
-#         Dict_user.dict_user_indx[f"{message.from_user.id}"] += 1
-#         await message.answer(f"Напиши {user_text[user_id+1]}")
-#         await State_list.next()
-#     except:
-#         data = await state.get_data()
-#         Dict_user.dict_user_answer[f'{message.from_user.id}'] = data
-#         await state.finish()
-#         await message.answer(text="Письмо создаётся...")
-#         await get_pdf(message=message, state=FSMContext)
-
-
-# @dp.message_handler(state=State_list.Q6)
-# async def answer_lst(message: types.Message, state: FSMContext):
-#     user_id = Dict_user.dict_user_indx[f"{message.from_user.id}"]
-#     user_text = Dict_user.dict_user_full_text[f'{message.from_user.id}']
-
-#     answer = message.text
-
-#     await state.update_data(
-#         {
-#             f'{user_text[user_id]}': answer
-#         }
-#     )
-
-#     try:
-#         Dict_user.dict_user_indx[f"{message.from_user.id}"] += 1
-#         await message.answer(f"Напиши {user_text[user_id+1]}")
-#         await State_list.next()
-#     except:
-#         data = await state.get_data()
-#         Dict_user.dict_user_answer[f'{message.from_user.id}'] = data
-#         await state.finish()
-#         await message.answer(text="Письмо создаётся...")
-#         await get_pdf(message=message, state=FSMContext)
-
-
-# @dp.message_handler(state=State_list.Q7)
-# async def answer_lst(message: types.Message, state: FSMContext):
-#     user_id = Dict_user.dict_user_indx[f"{message.from_user.id}"]
-#     user_text = Dict_user.dict_user_full_text[f'{message.from_user.id}']
-
-#     answer = message.text
-
-#     await state.update_data(
-#         {
-#             f'{user_text[user_id]}': answer
-#         }
-#     )
-
-#     try:
-#         Dict_user.dict_user_indx[f"{message.from_user.id}"] += 1
-#         await message.answer(f"Напиши {user_text[user_id+1]}")
-#         await State_list.next()
-#     except:
-#         data = await state.get_data()
-#         Dict_user.dict_user_answer[f'{message.from_user.id}'] = data
-#         await state.finish()
-#         await message.answer(text="Письмо создаётся...")
-#         await get_pdf(message=message, state=FSMContext)
-
-
-# @dp.message_handler(state=State_list.Q8)
-# async def answer_lst(message: types.Message, state: FSMContext):
-#     user_id = Dict_user.dict_user_indx[f"{message.from_user.id}"]
-#     user_text = Dict_user.dict_user_full_text[f'{message.from_user.id}']
-
-#     answer = message.text
-
-#     await state.update_data(
-#         {
-#             f'{user_text[user_id]}': answer
-#         }
-#     )
-
-#     try:
-#         Dict_user.dict_user_indx[f"{message.from_user.id}"] += 1
-#         await message.answer(f"Напиши {user_text[user_id+1]}")
-#         await State_list.next()
-#     except:
-#         data = await state.get_data()
-#         Dict_user.dict_user_answer[f'{message.from_user.id}'] = data
-#         await state.finish()
-#         await message.answer(text="Письмо создаётся...")
-#         await get_pdf(message=message, state=FSMContext)
-
-
-# @dp.message_handler(state=State_list.Q9)
-# async def answer_lst(message: types.Message, state: FSMContext):
-#     user_id = Dict_user.dict_user_indx[f"{message.from_user.id}"]
-#     user_text = Dict_user.dict_user_full_text[f'{message.from_user.id}']
-
-#     answer = message.text
-
-#     await state.update_data(
-#         {
-#             f'{user_text[user_id]}': answer
-#         }
-#     )
-
-#     try:
-#         Dict_user.dict_user_indx[f"{message.from_user.id}"] += 1
-#         await message.answer(f"Напиши {user_text[user_id+1]}")
-#         await State_list.next()
-#     except:
-#         data = await state.get_data()
-#         Dict_user.dict_user_answer[f'{message.from_user.id}'] = data
-#         await state.finish()
-#         await message.answer(text="Письмо создаётся...")
-#         await get_pdf(message=message, state=FSMContext)
-
-
-# @dp.message_handler(state=State_list.Q10)
-# async def answer_lst(message: types.Message, state: FSMContext):
-#     user_id = Dict_user.dict_user_indx[f"{message.from_user.id}"]
-#     user_text = Dict_user.dict_user_full_text[f'{message.from_user.id}']
-
-#     answer = message.text
-
-#     await state.update_data(
-#         {
-#             f'{user_text[user_id]}': answer
-#         }
-#     )
-
-#     try:
-#         Dict_user.dict_user_indx[f"{message.from_user.id}"] += 1
-#         await message.answer(f"Напиши {user_text[user_id+1]}")
-#         await State_list.next()
-#     except:
-#         data = await state.get_data()
-#         Dict_user.dict_user_answer[f'{message.from_user.id}'] = data
-#         await state.finish()
-#         await message.answer(text="Письмо создаётся...")
-#         await get_pdf(message=message, state=FSMContext)

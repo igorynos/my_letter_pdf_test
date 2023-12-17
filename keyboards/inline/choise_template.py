@@ -14,7 +14,7 @@ async def choice(message: types.Message):
         choice.add(InlineKeyboardButton(
             text=x, callback_data=template.new(name=x)))
     choice.add(InlineKeyboardButton(text="Отмена", callback_data="В начало"))
-    await message.answer("Выберите шаблон", reply_markup=choice)
+    await message.answer("Выберите шаблон:", reply_markup=choice)
 
 
 async def delete_choice(message: types.Message):

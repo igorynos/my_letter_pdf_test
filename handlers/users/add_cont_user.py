@@ -11,6 +11,9 @@ from loader import bot
 from keyboards.inline.choise_cont_user import dell_choise_cont_user
 from keyboards.inline.callback_data import dell_cont_user_choise
 from keyboards.inline.choise_cont_user import nest_pars, cont_user
+from keyboards.inline.menu_start import menu_start
+
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 
 
 @dp.callback_query_handler(text='Удалить получателя')
@@ -18,9 +21,9 @@ async def dell_cont_user(call: types.CallbackQuery):
     await dell_choise_cont_user(call.message)
 
 
-@dp.callback_query_handler(text='Пропустить')
-async def miss(call: types.CallbackQuery):
-    await bot.send_message(chat_id=call.message.chat.id, text="Пропустить")
+# @dp.message_handler(text='Пропустить', state='*')
+# async def miss(call: types.CallbackQuery, state: FSMContext):
+#     await bot.send_message(chat_id=call.message.chat.id, text='Пропустить')
 
 
 @dp.callback_query_handler(dell_cont_user_choise.filter())
@@ -35,7 +38,7 @@ async def cont_user_card(call: CallbackQuery, callback_data: dict, state: FSMCon
 
 @dp.callback_query_handler(text='Добавить получателя')
 async def add_cont_user_1(call: types.CallbackQuery, state: FSMContext):
-    await call.message.answer("Напиши его ФИО", reply_markup=nest_pars)
+    await call.message.answer("Напиши его ФИО")
     await state.set_state("add_cont_user_2")
 
 
@@ -47,7 +50,7 @@ async def add_cont_user_2(message: types.Message, state: FSMContext):
             'name': name
         }
     )
-    await message.answer("Напиши его статус", reply_markup=nest_pars)
+    await message.answer("Напиши его статус", reply_markup=ReplyKeyboardMarkup(resize_keyboard=True).add(KeyboardButton(text='Физ. лицо'),  KeyboardButton(text='Юр. лицо')))
     await state.set_state("add_cont_user_3")
 
 
@@ -146,5 +149,6 @@ async def add_cont_user_9(message: types.Message, state: FSMContext):
                      born=data["born"],
                      user=message.chat.id)
 
-    await message.answer(f"Получатель {data['name']} создан", reply_markup=cont_user)
+    await message.answer(f"Получатель {data['name']} создан", reply_markup=types.ReplyKeyboardRemove())
+    await message.answer(f"Выберете действие:", reply_markup=menu_start)
     await state.finish()

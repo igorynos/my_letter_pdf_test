@@ -10,7 +10,6 @@ async def change_card(message: types.Message):
     sql = f"SHOW COLUMNS FROM users"
     name_column = db.execute(sql, fetchall=True, commit=True)
     name_column = [item[0] for item in name_column]
-    print(name_column)
     dict_column_name = {"name": 'ФИО',
                         "status": 'Статус',
                         "adress": 'Адрес',
@@ -25,7 +24,7 @@ async def change_card(message: types.Message):
     for x in name_column[1:]:
         change_card.add(InlineKeyboardButton(
             text=dict_column_name[f'{x}'], callback_data=change_my_card.new(name=x)))
-    await message.answer("Выберите параметр", reply_markup=change_card)
+    await message.answer("Выберите параметр:", reply_markup=change_card)
 
 
 button1 = InlineKeyboardButton(text='Изменить', callback_data='Изменить')

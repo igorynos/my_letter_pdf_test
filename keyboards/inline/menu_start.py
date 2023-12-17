@@ -12,4 +12,4 @@ button5 = InlineKeyboardButton(
 
 
 menu_start = InlineKeyboardMarkup().row(
-    button1, button2, button3).row(button4, button5)
+    button1).row(button2, button3).row(button4, button5)
