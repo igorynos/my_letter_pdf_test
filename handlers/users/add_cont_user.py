@@ -29,11 +29,11 @@ async def dell_cont_user(call: types.CallbackQuery):
 @dp.callback_query_handler(dell_cont_user_choise.filter())
 async def cont_user_card(call: CallbackQuery, callback_data: dict, state: FSMContext):
     await call.answer(cache_time=60)
-    quantity = callback_data.get('name')
-    sql = f"DELETE FROM cont_users WHERE name='{quantity}'"
+    quantity = callback_data.get('id')
+    sql = f"DELETE FROM cont_users WHERE id='{quantity}'"
     db.execute(sql, fetchone=True, commit=True)
 
-    await bot.send_message(chat_id=call.message.chat.id, text=f"Получатель {quantity} удалён", reply_markup=cont_user)
+    await bot.send_message(chat_id=call.message.chat.id, text=f"Получатель удалён", reply_markup=cont_user)
 
 
 @dp.callback_query_handler(text='Добавить получателя')
@@ -48,18 +48,6 @@ async def add_cont_user_2(message: types.Message, state: FSMContext):
     await state.update_data(
         {
             'name': name
-        }
-    )
-    await message.answer("Напиши его статус", reply_markup=ReplyKeyboardMarkup(resize_keyboard=True).add(KeyboardButton(text='Физ. лицо'),  KeyboardButton(text='Юр. лицо')))
-    await state.set_state("add_cont_user_3")
-
-
-@dp.message_handler(state='add_cont_user_3')
-async def add_cont_user_3(message: types.Message, state: FSMContext):
-    name = message.text
-    await state.update_data(
-        {
-            'status': name
         }
     )
     await message.answer("Напиши его адрес", reply_markup=nest_pars)
@@ -140,7 +128,6 @@ async def add_cont_user_9(message: types.Message, state: FSMContext):
             data[x] = ''
 
     db.add_cont_user(name=data["name"],
-                     status=data["status"],
                      adress=data["adress"],
                      phone=data["phone"],
                      email=data["email"],

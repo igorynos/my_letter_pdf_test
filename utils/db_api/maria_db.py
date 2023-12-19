@@ -1,8 +1,10 @@
 import pymysql
+from data import config
+import random
 
 
 class Database:
-    def __init__(self, path_to_db=('yar.diskstation.me', 'bot', 'F28-cjr8s]bg!2eE', "letter_pdf_test", 13306)):
+    def __init__(self, path_to_db=(config.IP, config.PGUSER, config.PGPASSWORD, config.DATABASE, config.PORT)):
         self.path_to_db = path_to_db
 
     @property
@@ -64,6 +66,7 @@ class Database:
                 `born` text DEFAULT NULL,\
                 `comment` text DEFAULT NULL,\
                 `user` int(11) DEFAULT NULL,\
+                `id` int(11) DEFAULT NULL,\
                 KEY `cont_users_FK` (`user`),\
                 CONSTRAINT `cont_users_FK` FOREIGN KEY (`user`) REFERENCES `users` (`id`)\
             )"
@@ -74,7 +77,7 @@ class Database:
         sql = "CREATE TABLE IF NOT EXISTS template ( \
 					name 	TEXT,\
 					link 	TEXT,\
-					oper 	TEXT\
+					id 	int(11)\
                     )"
 
         self.execute(sql, commit=True)
@@ -103,10 +106,11 @@ class Database:
                       pasport='',
                       born='',
                       comment='',
-                      user=None):
-        sql = "INSERT IGNORE INTO cont_users VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s);"
+                      user=None,
+                      id=random.randint(1000000, 9999999)):
+        sql = "INSERT IGNORE INTO cont_users VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);"
         parameters = (name, status, adress, phone,
-                      email, inn, pasport, born, comment, user)
+                      email, inn, pasport, born, comment, user, id)
         self.execute(sql, parameters=parameters, commit=True)
 
     def update_user(self, id: int,
@@ -145,7 +149,7 @@ class Database:
                          inn='',
                          pasport='',
                          born='',
-                         comment=''
+                         comment='',
                          ):
         lst_args = {
             "name": name,
@@ -164,9 +168,9 @@ class Database:
                 self.execute(sql, parameters=(
                     data[1], lst_args['name']), commit=True)
 
-    def add_template(self, name: str, link: str, oper: str):
+    def add_template(self, name: str, link: str, template_id: int):
         sql = "INSERT IGNORE INTO template VALUES (%s, %s, %s);"
-        parameters = (name, link, oper)
+        parameters = (name, link, template_id)
         self.execute(sql, parameters=parameters, commit=True)
 
     def count_users(self):

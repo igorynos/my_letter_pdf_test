@@ -37,11 +37,30 @@ import subprocess
 
 from datetime import datetime
 
-# Get the current date and time
+
+month_dict = {
+    '1': 'января',
+    '2': 'февраля',
+    '3': 'марта',
+    '4': 'апреля',
+    '5': 'мая',
+    '6': 'июня',
+    '7': 'июля',
+    '8': 'августа',
+    '9': 'сентября',
+    '10': 'октября',
+    '11': 'ноября',
+    '12': 'декабря'
+}
 current_datetime = datetime.now()
 
 # Extract and format the date
 current_date = current_datetime.strftime('%Y-%m-%d')
+doc_data = current_datetime.strftime(
+    '%d %m %Y')
+doc_data = doc_data.split()
+doc_data[1] = month_dict[f'{doc_data[1]}']
+doc_data = ' '.join(map(str, doc_data))
 
 
 class Dict_user:
@@ -79,12 +98,11 @@ async def enter_test(call: CallbackQuery):
 async def letter(call: CallbackQuery, callback_data: dict, state: FSMContext):
     # logger.info(f"нажата кнопка {call}")
     await call.answer(cache_time=60)
-    quantity = callback_data.get('name')
+    quantity = callback_data.get('id')
 
-    sql = f"SELECT link FROM template WHERE name = '{quantity}'"
+    sql = f"SELECT link FROM template WHERE id = '{quantity}'"
     link_template = db.execute(sql, fetchone=True)
     link_template = link_template[0]
-
     response = urllib.request.urlopen(link_template)
     async with aiohttp.ClientSession() as session:
         async with session.get(link_template) as response:
@@ -111,8 +129,8 @@ async def letter(call: CallbackQuery, callback_data: dict, state: FSMContext):
 @dp.callback_query_handler(letter_cont_user_choise.filter())
 async def letter_2(call: CallbackQuery, callback_data: dict, state: FSMContext):
     await call.answer(cache_time=60)
-    quantity = callback_data.get('name')
-    sql = f"SELECT * FROM cont_users WHERE name='{quantity}'"
+    quantity = callback_data.get('id')
+    sql = f"SELECT * FROM cont_users WHERE id='{quantity}'"
     cont_card = db.execute(sql, fetchall=True, commit=True)
     cont_card = cont_card[0]
     sql = f"SELECT * FROM users WHERE id='{call.message.chat.id}'"
@@ -136,7 +154,8 @@ async def letter_2(call: CallbackQuery, callback_data: dict, state: FSMContext):
                         "cont_inn": f'{cont_card[5]}',
                         "cont_pasport": f'{cont_card[6]}',
                         "cont_born": f'{cont_card[7]}',
-                        "cont_comment": f'{cont_card[8]}'}
+                        "cont_comment": f'{cont_card[8]}',
+                        "data": doc_data}
 
     lst_none = []
     for x in Dict_user.dict_user_full_text[f'{call.message.chat.id}']:
@@ -172,7 +191,7 @@ async def letter_3(message: types.Message, state: FSMContext):
 
                     sql = f"SELECT name FROM users WHERE id='{message.chat.id}'"
                     name = db.execute(
-                        sql, fetchall=True, commit=True)[0]
+                        sql, fetchall=True, commit=True)[0][0]
 
                     for oper in Dict_user.dict_user_full_text[f'{message.chat.id}']:
                         for paragraph in doc.paragraphs:
@@ -180,10 +199,16 @@ async def letter_3(message: types.Message, state: FSMContext):
                             search_str = f'{{{{{oper}}}}}'
                             paragraph.text = text.replace(
                                 search_str, dict_oper[oper])
+                            try:
+                                paragraph.text = text.replace(
+                                    {{{{{'data'}}}}}, doc_data)
+                            except:
+                                pass
+
                     doc.save(f"docs/{name}_{data['name']}_{current_date}.docx")
                     file = f"docs/{name}_{data['name']}_{current_date}.docx"
                     convert(file, file[:-5] + ".pdf")
-                    # command = ['libreoffice', '--convert-to', 'pdf', file]
+                    # command = ['libreoffice', '--convert-to', 'pdf' '--outdir', './docs', file]
                     # subprocess.run(command, check=True)
                     await bot.send_document(message.chat.id, open(f"docs/{name}_{data['name']}_{current_date}.pdf", 'rb'))
                     await message.answer(text=f'Выберите действие', reply_markup=menu_start)
@@ -200,7 +225,7 @@ async def user_none(message: types.Message, state: FSMContext):
 
 async def letter_next(call: CallbackQuery, callback_data: dict, state: FSMContext):
     quantity = callback_data.get('name')
-    sql = f"SELECT * FROM cont_users WHERE name='{quantity}'"
+    sql = f"SELECT * FROM cont_users WHERE id='{quantity}'"
     cont_card = db.execute(sql, fetchall=True, commit=True)
     cont_card = cont_card[0]
     sql = f"SELECT * FROM users WHERE id='{call.message.chat.id}'"
@@ -224,9 +249,11 @@ async def letter_next(call: CallbackQuery, callback_data: dict, state: FSMContex
                         "cont_inn": f'{cont_card[5]}',
                         "cont_pasport": f'{cont_card[6]}',
                         "cont_born": f'{cont_card[7]}',
-                        "cont_comment": f'{cont_card[8]}'}
+                        "cont_comment": f'{cont_card[8]}',
+                        "data": doc_data}
 
     lst_none = []
+    print(Dict_user.dict_user_full_text[f'{call.message.chat.id}'])
     for x in Dict_user.dict_user_full_text[f'{call.message.chat.id}']:
         if dict_oper[x] == "":
             lst_none.append(x)
@@ -248,13 +275,14 @@ async def letter_next(call: CallbackQuery, callback_data: dict, state: FSMContex
 async def answer_lst(message: types.Message, state: FSMContext):
     data = await state.get_data()
     name = data['name']
+    print(name)
     user_id = Dict_user.dict_user_indx[f"{message.chat.id}"]
     user_text = Dict_user.dict_user_none_text[f'{message.chat.id}']
     oper = user_text[user_id]
 
     if 'cont_' in oper:
         oper = oper.replace("cont_", "")
-        sql = f"UPDATE cont_users SET {oper}=%s WHERE user=%s AND name=%s;"
+        sql = f"UPDATE cont_users SET {oper}=%s WHERE user=%s AND id=%s;"
         db.execute(sql, parameters=(
             message.text, message.chat.id, name), commit=True)
     else:
@@ -282,7 +310,7 @@ async def answer_lst(message: types.Message, state: FSMContext):
 
     if 'cont_' in oper:
         oper = oper.replace("cont_", "")
-        sql = f"UPDATE cont_users SET {oper}=%s WHERE user=%s AND name=%s;"
+        sql = f"UPDATE cont_users SET {oper}=%s WHERE user=%s AND id=%s;"
         db.execute(sql, parameters=(
             message.text, message.chat.id, name), commit=True)
     else:
@@ -310,7 +338,7 @@ async def answer_lst(message: types.Message, state: FSMContext):
 
     if 'cont_' in oper:
         oper = oper.replace("cont_", "")
-        sql = f"UPDATE cont_users SET {oper}=%s WHERE user=%s AND name=%s;"
+        sql = f"UPDATE cont_users SET {oper}=%s WHERE user=%s AND id=%s;"
         db.execute(sql, parameters=(
             message.text, message.chat.id, name), commit=True)
     else:
@@ -338,7 +366,7 @@ async def answer_lst(message: types.Message, state: FSMContext):
 
     if 'cont_' in oper:
         oper = oper.replace("cont_", "")
-        sql = f"UPDATE cont_users SET {oper}=%s WHERE user=%s AND name=%s;"
+        sql = f"UPDATE cont_users SET {oper}=%s WHERE user=%s AND id=%s;"
         db.execute(sql, parameters=(
             message.text, message.chat.id, name), commit=True)
     else:
@@ -366,7 +394,7 @@ async def answer_lst(message: types.Message, state: FSMContext):
 
     if 'cont_' in oper:
         oper = oper.replace("cont_", "")
-        sql = f"UPDATE cont_users SET {oper}=%s WHERE user=%s AND name=%s;"
+        sql = f"UPDATE cont_users SET {oper}=%s WHERE user=%s AND id=%s;"
         db.execute(sql, parameters=(
             message.text, message.chat.id, name), commit=True)
     else:
@@ -394,7 +422,7 @@ async def answer_lst(message: types.Message, state: FSMContext):
 
     if 'cont_' in oper:
         oper = oper.replace("cont_", "")
-        sql = f"UPDATE cont_users SET {oper}=%s WHERE user=%s AND name=%s;"
+        sql = f"UPDATE cont_users SET {oper}=%s WHERE user=%s AND id=%s;"
         db.execute(sql, parameters=(
             message.text, message.chat.id, name), commit=True)
     else:
@@ -422,7 +450,7 @@ async def answer_lst(message: types.Message, state: FSMContext):
 
     if 'cont_' in oper:
         oper = oper.replace("cont_", "")
-        sql = f"UPDATE cont_users SET {oper}=%s WHERE user=%s AND name=%s;"
+        sql = f"UPDATE cont_users SET {oper}=%s WHERE user=%s AND id=%s;"
         db.execute(sql, parameters=(
             message.text, message.chat.id, name), commit=True)
     else:
@@ -450,7 +478,7 @@ async def answer_lst(message: types.Message, state: FSMContext):
 
     if 'cont_' in oper:
         oper = oper.replace("cont_", "")
-        sql = f"UPDATE cont_users SET {oper}=%s WHERE user=%s AND name=%s;"
+        sql = f"UPDATE cont_users SET {oper}=%s WHERE user=%s AND id=%s;"
         db.execute(sql, parameters=(
             message.text, message.chat.id, name), commit=True)
     else:
@@ -478,7 +506,7 @@ async def answer_lst(message: types.Message, state: FSMContext):
 
     if 'cont_' in oper:
         oper = oper.replace("cont_", "")
-        sql = f"UPDATE cont_users SET {oper}=%s WHERE user=%s AND name=%s;"
+        sql = f"UPDATE cont_users SET {oper}=%s WHERE user=%s AND id=%s;"
         db.execute(sql, parameters=(
             message.text, message.chat.id, name), commit=True)
     else:
@@ -506,7 +534,7 @@ async def answer_lst(message: types.Message, state: FSMContext):
 
     if 'cont_' in oper:
         oper = oper.replace("cont_", "")
-        sql = f"UPDATE cont_users SET {oper}=%s WHERE user=%s AND name=%s;"
+        sql = f"UPDATE cont_users SET {oper}=%s WHERE user=%s AND id=%s;"
         db.execute(sql, parameters=(
             message.text, message.chat.id, name), commit=True)
     else:
