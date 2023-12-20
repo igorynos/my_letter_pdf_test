@@ -16,7 +16,7 @@ import io
 
 
 from keyboards.inline.callback_data import template
-from keyboards.inline.menu_start import menu_start
+from keyboards.inline.menu_start import menu_start_admin, menu_start_user
 from keyboards.inline.choise_template import choice
 from keyboards.inline.choise_cont_user import letter_choise_cont_user
 from keyboards.inline.callback_data import template, letter_cont_user_choise
@@ -36,6 +36,8 @@ import subprocess
 
 
 from datetime import datetime
+
+from data import config
 
 
 month_dict = {
@@ -213,7 +215,10 @@ async def letter_3(message: types.Message, state: FSMContext):
                     # command = ['libreoffice', '--convert-to', 'pdf', '--outdir', dir_name, file_name]
                     # subprocess.run(command, check=True)
                     await bot.send_document(message.chat.id, open(file_name[:-5] + ".pdf", 'rb'))
-                    await message.answer(text=f'Выберите действие', reply_markup=menu_start)
+                    if str(message.chat.id) in config.ADMINS:
+                        await message.answer(f"Выберите действие:", reply_markup=menu_start_admin)
+                    else:
+                        await message.answer(f"Выберите действие:", reply_markup=menu_start_user)
 
 
 async def user_none(message: types.Message, state: FSMContext):

@@ -11,5 +11,8 @@ button5 = InlineKeyboardButton(
     text="Словарь операндов", callback_data="Словарь операндов")
 
 
-menu_start = InlineKeyboardMarkup().row(
+menu_start_admin = InlineKeyboardMarkup().row(
     button1).row(button2, button3).row(button4, button5)
+
+menu_start_user = InlineKeyboardMarkup().row(
+    button1).row(button2, button3)

@@ -11,9 +11,11 @@ from loader import bot
 from keyboards.inline.choise_cont_user import dell_choise_cont_user
 from keyboards.inline.callback_data import dell_cont_user_choise
 from keyboards.inline.choise_cont_user import nest_pars, cont_user
-from keyboards.inline.menu_start import menu_start
+from keyboards.inline.menu_start import menu_start_user, menu_start_admin
 
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+
+from data import config
 
 
 @dp.callback_query_handler(text='Удалить получателя')
@@ -137,5 +139,8 @@ async def add_cont_user_9(message: types.Message, state: FSMContext):
                      user=message.chat.id)
 
     await message.answer(f"Получатель {data['name']} создан", reply_markup=types.ReplyKeyboardRemove())
-    await message.answer(f"Выберете действие:", reply_markup=menu_start)
+    if str(message.chat.id) in config.ADMINS:
+        await message.answer(f"Выберите действие:", reply_markup=menu_start_admin)
+    else:
+        await message.answer(f"Выберите действие:", reply_markup=menu_start_user)
     await state.finish()

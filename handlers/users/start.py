@@ -20,7 +20,7 @@ from keyboards.inline.change_user_card import change_card
 from keyboards.inline.change_user_card import user_card
 from keyboards.inline.choise_cont_user import choise_cont_user, change_cont_card, nest_pars, cont_user, cont_user_2
 from keyboards.inline.callback_data import template, del_template, change_my_card, cont_user_choise, change_cont_user_choise
-from keyboards.inline.menu_start import menu_start
+from keyboards.inline.menu_start import menu_start_admin, menu_start_user
 
 
 import random
@@ -35,6 +35,8 @@ import urllib.request
 import re
 from docx2pdf import convert
 import aiohttp
+
+from data import config
 
 dict_temp = {}
 dict_column_name = {"name": 'ФИО изменено',
@@ -63,7 +65,10 @@ async def bot_start(message: types.Message, state: FSMContext):
         await message.answer("Напиши своё ФИО")
         await state.set_state("FIO")
     else:
-        await message.answer(f"Выберите действие:", reply_markup=menu_start)
+        if str(message.chat.id) in config.ADMINS:
+            await message.answer(f"Выберите действие:", reply_markup=menu_start_admin)
+        else:
+            await message.answer(f"Выберите действие:", reply_markup=menu_start_user)
 
 
 @dp.callback_query_handler(text='В начало')
@@ -90,7 +95,10 @@ async def dict_oper(call: types.CallbackQuery):
 {{cont_born}} - Дата рождения получателя\n\
 {{cont_comment}} - Комментарий получателя\n\
 {{data}} - Дата')
-    await call.message.answer(text=text, reply_markup=menu_start)
+    if str(call.message.chat.id) in config.ADMINS:
+        await call.message.answer(f"Выберите действие:", reply_markup=menu_start_admin)
+    else:
+        await call.message.answer(f"Выберите действие:", reply_markup=menu_start_user)
 
 
 @dp.message_handler(state="FIO")
@@ -103,7 +111,10 @@ async def enter_name(message: types.Message, state: FSMContext):
         ])
     )
     await state.finish()
-    await message.answer(f"Выберите действие:", reply_markup=menu_start)
+    if str(message.chat.id) in config.ADMINS:
+        await message.answer(f"Выберите действие:", reply_markup=menu_start_admin)
+    else:
+        await message.answer(f"Выберите действие:", reply_markup=menu_start_user)
 
 
 @dp.message_handler(text='Создать письмо')
