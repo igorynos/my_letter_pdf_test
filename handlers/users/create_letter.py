@@ -120,10 +120,9 @@ async def letter(call: CallbackQuery, callback_data: dict, state: FSMContext):
                             matches = re.findall(pattern, text)
                             full_text.extend(matches)
 
-    # logger.info(f"запрос прошёл {full_text}")
-    await letter_choise_cont_user(message=call.message, state=state)
     Dict_user.dict_user_full_text[f'{call.message.chat.id}'] = full_text
     Dict_user.dict_user_call[f'{call.message.chat.id}'] = link_template
+    await letter_choise_cont_user(message=call.message, state=state)
 
 
 @dp.callback_query_handler(letter_cont_user_choise.filter())
@@ -205,12 +204,15 @@ async def letter_3(message: types.Message, state: FSMContext):
                             except:
                                 pass
 
-                    doc.save(f"docs/{name}_{data['name']}_{current_date}.docx")
-                    file = f"docs/{name}_{data['name']}_{current_date}.docx"
-                    convert(file, file[:-5] + ".pdf")
-                    # command = ['libreoffice', '--convert-to', 'pdf' '--outdir', './docs', file]
+                    dir_name = f"docs"
+                    file_name = dir_name + \
+                        f"/{name}_{data['name']}_{current_date}.docx".replace(
+                            ' ', '_')
+                    doc.save(file_name)
+                    convert(file_name, file_name[:-5] + ".pdf")
+                    # command = ['libreoffice', '--convert-to', 'pdf', '--outdir', dir_name, file_name]
                     # subprocess.run(command, check=True)
-                    await bot.send_document(message.chat.id, open(f"docs/{name}_{data['name']}_{current_date}.pdf", 'rb'))
+                    await bot.send_document(message.chat.id, open(file_name[:-5] + ".pdf", 'rb'))
                     await message.answer(text=f'Выберите действие', reply_markup=menu_start)
 
 

@@ -252,7 +252,7 @@ async def change_cont_card_2(call: CallbackQuery, callback_data: dict, state: FS
         }
     )
 
-    await call.message.answer(f"Напишите новое значение {dict_column_name(f'{quantity}')}")
+    await call.message.answer(f"Напишите новое значение")
     await state.set_state("change_cont_card_3")
 
 

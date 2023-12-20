@@ -6,6 +6,8 @@ from keyboards.inline.callback_data import cont_user_choise, change_cont_user_ch
 
 from aiogram.dispatcher.storage import FSMContext
 
+import random
+
 from aiogram import types
 
 
@@ -29,7 +31,7 @@ async def letter_choise_cont_user(message: types.Message, state: FSMContext):
         f"SELECT id FROM cont_users WHERE user = {message.chat.id}", fetchall=True)]
     print(lst_template)
     if len(lst_template) == 0:
-        await message.answer("Напиши его ФИО")
+        await message.answer("Напиши имя получателя")
         await state.set_state("add_cont_user_name")
     else:
         choice = InlineKeyboardMarkup(row_width=2)
@@ -100,5 +102,10 @@ nest_pars = ReplyKeyboardMarkup(
 @dp.message_handler(state='add_cont_user_name')
 async def add_cont_user_name(message: types.Message, state: FSMContext):
     name = message.text
-    db.add_cont_user(name=name, user=message.chat.id)
-    await letter_choise_cont_user(message=message, state=state)
+    id_cont = random.randint(1000000, 9999999)
+    db.add_cont_user(name=name, user=message.chat.id, id=id_cont)
+    choice = InlineKeyboardMarkup(row_width=2)
+    choice.add(InlineKeyboardButton(
+        text=name, callback_data=letter_cont_user_choise.new(id=id_cont)))
+    await message.answer("Выберите получателя", reply_markup=choice)
+    await state.finish()
