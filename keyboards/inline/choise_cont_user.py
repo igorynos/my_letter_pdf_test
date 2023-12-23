@@ -13,7 +13,7 @@ from aiogram import types
 
 async def choise_cont_user(message: types.Message):
     lst_template = [item[0] for item in db.execute(
-        f"SELECT name FROM cont_users WHERE user = {message.chat.id}", fetchall=True)]
+        f"SELECT org FROM cont_users WHERE user = {message.chat.id}", fetchall=True)]
     lst_id = [item[0] for item in db.execute(
         f"SELECT id FROM cont_users WHERE user = {message.chat.id}", fetchall=True)]
     choice = InlineKeyboardMarkup(row_width=2)
@@ -26,12 +26,12 @@ async def choise_cont_user(message: types.Message):
 
 async def letter_choise_cont_user(message: types.Message, state: FSMContext):
     lst_template = [item[0] for item in db.execute(
-        f"SELECT name FROM cont_users WHERE user = {message.chat.id}", fetchall=True)]
+        f"SELECT org FROM cont_users WHERE user = {message.chat.id}", fetchall=True)]
     lst_id = [item[0] for item in db.execute(
         f"SELECT id FROM cont_users WHERE user = {message.chat.id}", fetchall=True)]
     print(lst_template)
     if len(lst_template) == 0:
-        await message.answer("Напиши имя получателя")
+        await message.answer("Напиши наименование организации получателя")
         await state.set_state("add_cont_user_name")
     else:
         choice = InlineKeyboardMarkup(row_width=2)
@@ -43,7 +43,7 @@ async def letter_choise_cont_user(message: types.Message, state: FSMContext):
 
 async def dell_choise_cont_user(message: types.Message):
     lst_template = [item[0] for item in db.execute(
-        f"SELECT name FROM cont_users WHERE user = {message.chat.id}", fetchall=True)]
+        f"SELECT org FROM cont_users WHERE user = {message.chat.id}", fetchall=True)]
     lst_id = [item[0] for item in db.execute(
         f"SELECT id FROM cont_users WHERE user = {message.chat.id}", fetchall=True)]
     choice = InlineKeyboardMarkup(row_width=2)
@@ -58,15 +58,19 @@ async def change_cont_card(message: types.Message, name=None):
     sql = f"SHOW COLUMNS FROM cont_users"
     name_column = db.execute(sql, fetchall=True, commit=True)
     name_column = [item[0] for item in name_column]
-    dict_column_name = {"name": 'ФИО',
-                        "status": 'Статус',
-                        "adress": 'Адрес',
-                        "phone": 'Телефон',
-                        "email": 'Email',
-                        "inn": 'ИНН',
-                        "pasport": 'Паспорт',
-                        "born": 'Дата рождения',
-                        "comment": 'Коментарий'}
+    dict_column_name = {"org": f'Наименование организации получателя',
+                        "ogrn": f'ОГРН организации получателя',
+                        "adress": f'Почтовый адрес организации получателя',
+                        "phone": f'Телефон представителя организации получателя',
+                        "email": f'Email организации получателя',
+                        "inn": f'ИНН организации получателя',
+                        "pasport": f'Паспорт получателя',
+                        "born": f'Дату рождения получателя',
+                        "comment": f'Комментарий (статус) организации получателя',
+                        "fio": f'ФИО руководителя организации получателя',
+                        "headstatus": f'Должность руководителя организации получателя',
+                        "fiocont": f'ФИО представителя организации получателя',
+                        "link": f'Ссылку на организацию получателя'}
 
     change_card = InlineKeyboardMarkup(row_width=3)
     for x in name_column[:-2]:
@@ -103,7 +107,7 @@ nest_pars = ReplyKeyboardMarkup(
 async def add_cont_user_name(message: types.Message, state: FSMContext):
     name = message.text
     id_cont = random.randint(1000000, 9999999)
-    db.add_cont_user(name=name, user=message.chat.id, id=id_cont)
+    db.add_cont_user(org=name, user=message.chat.id, id=id_cont)
     choice = InlineKeyboardMarkup(row_width=2)
     choice.add(InlineKeyboardButton(
         text=name, callback_data=letter_cont_user_choise.new(id=id_cont)))

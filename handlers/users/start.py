@@ -65,6 +65,7 @@ async def bot_start(message: types.Message, state: FSMContext):
         await message.answer("Напиши своё ФИО")
         await state.set_state("FIO")
     else:
+        print(config.ADMINS)
         if str(message.chat.id) in config.ADMINS:
             await message.answer(f"Выберите действие:", reply_markup=menu_start_admin)
         else:
@@ -78,23 +79,27 @@ async def in_start(call: types.CallbackQuery, state: FSMContext):
 
 @dp.callback_query_handler(text='Словарь операндов')
 async def dict_oper(call: types.CallbackQuery):
-    text = ('{{name}} - Имя пользователя\n\
-{{adress}} - Адресс пользователя\n\
-{{phone}} - Телефон пользователя\n\
-{{email}} - Email пользователя\n\
+    text = "{{fio}} - имя пользователя\n\
+{{adress}} - адрес отправителя\n\
+{{phone}} - ваш номер телефона\n\
+{{email}} - email пользователя\n\
 {{inn}} - ИНН пользователя\n\
-{{pasport}} - Пасспорт пользователя\n\
-{{born}} - Дата рождения пользователя\n\
-{{comment}} - Комментарий пользователя\n\
-{{cont_name}} - Имя получателя\n\
-{{cont_adress}} - Адрес получателя\n\
-{{cont_phone}} - Телефон получателя\n\
-{{cont_email}} - Email получателя\n\
-{{cont_inn}} - ИНН получателя\n\
-{{cont_pasport}} - Паспорт получателя\n\
-{{cont_born}} - Дата рождения получателя\n\
-{{cont_comment}} - Комментарий получателя\n\
-{{data}} - Дата')
+{{pasport}} - пасспорт пользователя\n\
+{{born}} - дату рождения пользователя\n\
+{{comment}} - комментарий пользователя\n\
+{{cont_org}} - наименование организации получателя\n\
+{{cont_ogrn}} - ОГРН организации получателя\n\
+{{cont_adress}} - почтовый адрес организации получателя'\n\
+{{cont_phone}} - телефон представителя организации получателя'\n\
+{{cont_email}} - Email организации получателя'\n\
+{{cont_inn}} - ИНН организации получателя\n\
+{{cont_comment}} - комментарий (статус) организации получателя\n\
+{{cont_fio}} - ФИО руководителя организации получателя\n\
+{{cont_headstatus}} - должность руководителя организации получателя\n\
+{{cont_fiocont}} - ФИО представителя организации получателя\n\
+{{cont_link}} - ссылкf на организацию получателя\n\
+{{doc_text}} - дополнительный текст"
+    await call.message.answer(text=text)
     if str(call.message.chat.id) in config.ADMINS:
         await call.message.answer(f"Выберите действие:", reply_markup=menu_start_admin)
     else:
@@ -171,13 +176,14 @@ async def cont_user_card(call: CallbackQuery, callback_data: dict, state: FSMCon
     dict_temp[f'{call.message.chat.id}'] = quantity
 
     text = f"{my_card[0]}\n\
-Адрес: {my_card[2]}\n\
-Тел: {my_card[3]}\n\
-Email: {my_card[4]}\n\
-ИНН: {my_card[5]}\n\
-Паспорт: {my_card[6]}\n\
-Дата рождения: {my_card[7]}\n\
-Комментарий: {my_card[8]}"
+Почтовый адрес организации получателя: {my_card[2]}\n\
+Телефон представителя организации получателя: {my_card[3]}\n\
+Email организации получателя: {my_card[4]}\n\
+ФИО руководителя организации получателя : {my_card[9]}\n\
+Должность руководителя организации получателя: {my_card[10]}\n\
+ФИО представителя организации получателя: {my_card[11]}\n\
+Комментарий (статус) организации получателя: {my_card[8]}\n\
+Ссылка на организацию получателя: {my_card[12]}"
     await bot.send_message(chat_id=call.message.chat.id, text=text, reply_markup=cont_user_2)
 
 
@@ -289,15 +295,19 @@ async def change_cont_card_3(message: types.Message, state: FSMContext):
     answer1 = data.get("answer")
     id_cont = data.get("id")
     answer2 = message.text
-    dict_column_name = {"name": 'ФИО изменено',
-                        "status": 'Статус изменен',
-                        "adress": 'Адрес изменен',
-                        "phone": 'Телефон изменен',
-                        "email": 'Email изменен',
-                        "inn": 'ИНН изменен',
-                        "pasport": 'Паспорт изменен',
-                        "born": 'Дата рождения изменено',
-                        "comment": 'Коментарий изменен'}
+    dict_column_name = {"org": f'Наименование организации получателя изменено',
+                        "ogrn": f'ОГРН организации получателя изменено',
+                        "adress": f'Почтовый адрес организации получателя изменен',
+                        "phone": f'Телефон представителя организации получателя изменен',
+                        "email": f'Email организации получателя изменен',
+                        "inn": f'ИНН организации получателя изменен',
+                        "pasport": f'Паспорт получателя изменен',
+                        "born": f'Дату рождения получателя',
+                        "comment": f'Комментарий (статус) организации получателя изменен',
+                        "fio": f'ФИО руководителя организации получателя изменен',
+                        "headstatus": f'Должность руководителя организации получателя изменена',
+                        "fiocont": f'ФИО представителя организации получателя изменено',
+                        "link": f'Ссылка на организацию получателя изменена'}
 
     sql = f"UPDATE cont_users SET {answer1} = '{answer2}' WHERE user = %s AND id = %s"
     db.execute(sql, parameters=(message.chat.id, id_cont),

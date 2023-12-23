@@ -40,7 +40,7 @@ async def cont_user_card(call: CallbackQuery, callback_data: dict, state: FSMCon
 
 @dp.callback_query_handler(text='Добавить получателя')
 async def add_cont_user_1(call: types.CallbackQuery, state: FSMContext):
-    await call.message.answer("Напиши его ФИО")
+    await call.message.answer("Напишите наименование организации получателя")
     await state.set_state("add_cont_user_2")
 
 
@@ -49,10 +49,10 @@ async def add_cont_user_2(message: types.Message, state: FSMContext):
     name = message.text
     await state.update_data(
         {
-            'name': name
+            'org': name
         }
     )
-    await message.answer("Напиши его адрес", reply_markup=nest_pars)
+    await message.answer("Напишите почтовый адрес организации получателя", reply_markup=nest_pars)
     await state.set_state("add_cont_user_4")
 
 
@@ -64,7 +64,7 @@ async def add_cont_user_4(message: types.Message, state: FSMContext):
             'adress': name
         }
     )
-    await message.answer("Напиши его телефон", reply_markup=nest_pars)
+    await message.answer("Напишите ФИО руководителя организации получателя", reply_markup=nest_pars)
     await state.set_state("add_cont_user_5")
 
 
@@ -73,55 +73,19 @@ async def add_cont_user_5(message: types.Message, state: FSMContext):
     name = message.text
     await state.update_data(
         {
-            'phone': name
+            'fio': name
         }
     )
-    await message.answer("Напиши его email", reply_markup=nest_pars)
+    await message.answer("Напишите должность руководителя организации получателя", reply_markup=nest_pars)
     await state.set_state("add_cont_user_6")
 
 
 @dp.message_handler(state='add_cont_user_6')
-async def add_cont_user_6(message: types.Message, state: FSMContext):
-    name = message.text
-    await state.update_data(
-        {
-            'email': name
-        }
-    )
-    await message.answer("Напиши его ИНН", reply_markup=nest_pars)
-    await state.set_state("add_cont_user_7")
-
-
-@dp.message_handler(state='add_cont_user_7')
-async def add_cont_user_7(message: types.Message, state: FSMContext):
-    name = message.text
-    await state.update_data(
-        {
-            'inn': name
-        }
-    )
-    await message.answer("Напиши его поспорт", reply_markup=nest_pars)
-    await state.set_state("add_cont_user_8")
-
-
-@dp.message_handler(state='add_cont_user_8')
-async def add_cont_user_8(message: types.Message, state: FSMContext):
-    name = message.text
-    await state.update_data(
-        {
-            'pasport': name
-        }
-    )
-    await message.answer("Напиши его дату рождения", reply_markup=nest_pars)
-    await state.set_state("add_cont_user_9")
-
-
-@dp.message_handler(state='add_cont_user_9')
 async def add_cont_user_9(message: types.Message, state: FSMContext):
     name = message.text
     await state.update_data(
         {
-            'born': name
+            'headstatus': name
         }
     )
     data = await state.get_data()
@@ -129,16 +93,13 @@ async def add_cont_user_9(message: types.Message, state: FSMContext):
         if data[x] == 'Пропустить':
             data[x] = ''
 
-    db.add_cont_user(name=data["name"],
+    db.add_cont_user(org=data["org"],
                      adress=data["adress"],
-                     phone=data["phone"],
-                     email=data["email"],
-                     inn=data["inn"],
-                     pasport=data["pasport"],
-                     born=data["born"],
+                     fio=data['fio'],
+                     headstatus=data['headstatus'],
                      user=message.chat.id)
 
-    await message.answer(f"Получатель {data['name']} создан", reply_markup=types.ReplyKeyboardRemove())
+    await message.answer(f"Получатель {data['org']} создан", reply_markup=types.ReplyKeyboardRemove())
     if str(message.chat.id) in config.ADMINS:
         await message.answer(f"Выберите действие:", reply_markup=menu_start_admin)
     else:

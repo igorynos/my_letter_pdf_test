@@ -97,8 +97,8 @@ class Database:
                       email, inn, pasport, born, comment)
         self.execute(sql, parameters=parameters, commit=True)
 
-    def add_cont_user(self, name: str,
-                      status='',
+    def add_cont_user(self, org: str,
+                      ogrn='',
                       adress='',
                       phone='',
                       email='',
@@ -106,11 +106,15 @@ class Database:
                       pasport='',
                       born='',
                       comment='',
+                      fio='',
+                      headstatus='',
+                      fiocont='',
+                      link='',
                       user=None,
                       id=random.randint(1000000, 9999999)):
-        sql = "INSERT IGNORE INTO cont_users VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);"
-        parameters = (name, status, adress, phone,
-                      email, inn, pasport, born, comment, user, id)
+        sql = "INSERT IGNORE INTO cont_users VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);"
+        parameters = (org, ogrn, adress, phone,
+                      email, inn, pasport, born, comment, fio, headstatus, fiocont, link, user, id)
         self.execute(sql, parameters=parameters, commit=True)
 
     def update_user(self, id: int,
@@ -141,8 +145,8 @@ class Database:
                 self.execute(sql, parameters=(
                     data[1], lst_args['id']), commit=True)
 
-    def update_cont_user(self, name='',
-                         status='',
+    def update_cont_user(self, org='',
+                         ogrn='',
                          adress='',
                          phone='',
                          email='',
@@ -150,23 +154,31 @@ class Database:
                          pasport='',
                          born='',
                          comment='',
+                         fio='',
+                         headstatus='',
+                         fiocont='',
+                         link=''
                          ):
         lst_args = {
-            "name": name,
-            "status": status,
+            "org": org,
+            "ogrn": ogrn,
             "adress": adress,
             "phone": phone,
             "email": email,
             "inn": inn,
             "pasport": pasport,
             "born": born,
-            "comment": comment
+            "comment": comment,
+            "fio": fio,
+            "headstatus": headstatus,
+            "fiocont": fiocont,
+            "link": link
         }
         for data in lst_args.items():
-            if data[1] != '' and data[0] != 'name':
-                sql = f"UPDATE cont_users SET {data[0]}=%s WHERE name=%s;"
+            if data[1] != '' and data[0] != 'org':
+                sql = f"UPDATE cont_users SET {data[0]}=%s WHERE org=%s;"
                 self.execute(sql, parameters=(
-                    data[1], lst_args['name']), commit=True)
+                    data[1], lst_args['org']), commit=True)
 
     def add_template(self, name: str, link: str, template_id: int):
         sql = "INSERT IGNORE INTO template VALUES (%s, %s, %s);"
