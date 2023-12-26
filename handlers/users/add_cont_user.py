@@ -17,6 +17,9 @@ from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 
 from data import config
 
+from dadata import Dadata
+import random
+
 
 @dp.callback_query_handler(text='Удалить получателя')
 async def dell_cont_user(call: types.CallbackQuery):
@@ -39,9 +42,41 @@ async def cont_user_card(call: CallbackQuery, callback_data: dict, state: FSMCon
 
 
 @dp.callback_query_handler(text='Добавить получателя')
-async def add_cont_user_1(call: types.CallbackQuery, state: FSMContext):
-    await call.message.answer("Напишите наименование организации получателя")
-    await state.set_state("add_cont_user_2")
+async def add_cont_user_0(call: types.CallbackQuery, state: FSMContext):
+    await call.message.answer("Напишите ИНН получателя", reply_markup=nest_pars)
+    await state.set_state("add_cont_user_1")
+
+
+@dp.message_handler(state='add_cont_user_1')
+async def add_cont_user_1(message: types.Message, state: FSMContext):
+    name = message.text
+    token = "20473d0a0f63fdc5c6921b0d9b54ae2ca0745429"
+    dadata = Dadata(token)
+    data = dadata.find_by_id("party", name)
+
+    if data != []:
+        company_info = data[0]
+        db.add_cont_user(org=company_info['value'],
+                         ogrn=company_info['data']['ogrn'],
+                         adress=company_info['data']['address']['unrestricted_value'],
+                         fio=company_info['data']['management']['name'],
+                         headstatus=company_info['data']['management']['post'],
+                         id=random.randint(1000000, 9999999),
+                         user=message.chat.id)
+        await message.answer(f"Получатель {company_info['value']} создан")
+        if str(message.chat.id) in config.ADMINS:
+            await message.answer(f"Выберите действие:", reply_markup=menu_start_admin)
+        else:
+            await message.answer(f"Выберите действие:", reply_markup=menu_start_user)
+        await state.finish()
+    else:
+        await state.update_data(
+            {
+                'inn': name
+            }
+        )
+        await message.answer("Напишите наименование организации получателя", reply_markup=nest_pars)
+        await state.set_state("add_cont_user_2")
 
 
 @dp.message_handler(state='add_cont_user_2')
@@ -97,6 +132,7 @@ async def add_cont_user_9(message: types.Message, state: FSMContext):
                      adress=data["adress"],
                      fio=data['fio'],
                      headstatus=data['headstatus'],
+                     id=random.randint(1000000, 9999999),
                      user=message.chat.id)
 
     await message.answer(f"Получатель {data['org']} создан", reply_markup=types.ReplyKeyboardRemove())
