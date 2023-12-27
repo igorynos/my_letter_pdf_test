@@ -39,6 +39,8 @@ from datetime import datetime
 
 from data import config
 
+import platform
+
 
 month_dict = {
     '1': 'января',
@@ -223,9 +225,13 @@ async def letter_3(message: types.Message, state: FSMContext):
                         f"/{name}_{data['name']}_{current_date}.docx".replace(
                             ' ', '_')
                     doc.save(file_name)
-                    convert(file_name, file_name[:-5] + ".pdf")
-                    # command = ['libreoffice', '--convert-to', 'pdf', '--outdir', dir_name, file_name]
-                    # subprocess.run(command, check=True)
+                    os_name = platform.system()
+                    if os_name == "Windows":
+                        convert(file_name, file_name[:-5] + ".pdf")
+                    else:
+                        command = ['libreoffice', '--convert-to',
+                                   'pdf', '--outdir', dir_name, file_name]
+                        subprocess.run(command, check=True)
                     await bot.send_document(message.chat.id, open(file_name[:-5] + ".pdf", 'rb'))
                     if str(message.chat.id) in config.ADMINS:
                         await message.answer(f"Выберите действие:", reply_markup=menu_start_admin)
