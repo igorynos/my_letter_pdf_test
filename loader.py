@@ -19,6 +19,9 @@ logger_handler.setFormatter(logging.Formatter(
     '%(asctime)s [%(levelname)s]:  %(message)s'))
 logger.info('Запуск приложения "Bot"')
 
+if not os.path.isdir("docs"):
+    os.mkdir("docs")
+
 bot = Bot(token=config.BOT_TOKEN, parse_mode=types.ParseMode.HTML)
 storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage)
