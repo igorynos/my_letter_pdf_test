@@ -61,6 +61,7 @@ async def add_cont_user_1(message: types.Message, state: FSMContext):
                          adress=company_info['data']['address']['unrestricted_value'],
                          fio=company_info['data']['management']['name'],
                          headstatus=company_info['data']['management']['post'],
+                         inn=name,
                          id=random.randint(1000000, 9999999),
                          user=message.chat.id)
         await message.answer(f"Получатель {company_info['value']} создан")

@@ -120,6 +120,7 @@ async def add_cont_user_name(message: types.Message, state: FSMContext):
                          adress=company_info['data']['address']['unrestricted_value'],
                          fio=company_info['data']['management']['name'],
                          headstatus=company_info['data']['management']['post'],
+                         inn=name,
                          id=id_cont,
                          user=message.chat.id)
         await message.answer(f"Получатель {company_info['value']} создан")
@@ -134,7 +135,7 @@ async def add_cont_user_name(message: types.Message, state: FSMContext):
                 'inn': name
             }
         )
-        await message.answer("Напишите наименование организации получателя", reply_markup=nest_pars)
+        await message.answer("Напишите наименование организации получателя")
         await state.set_state("add_cont_user_name_2")
 
 
