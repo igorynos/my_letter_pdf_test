@@ -175,15 +175,14 @@ async def cont_user_card(call: CallbackQuery, callback_data: dict, state: FSMCon
     my_card = my_card[0]
     dict_temp[f'{call.message.chat.id}'] = quantity
 
-    text = f"{my_card[0]}\n\
-Почтовый адрес организации получателя: {my_card[2]}\n\
-Телефон представителя организации получателя: {my_card[3]}\n\
-Email организации получателя: {my_card[4]}\n\
-ФИО руководителя организации получателя : {my_card[9]}\n\
-Должность руководителя организации получателя: {my_card[10]}\n\
-ФИО представителя организации получателя: {my_card[11]}\n\
-Комментарий (статус) организации получателя: {my_card[8]}\n\
-Ссылка на организацию получателя: {my_card[12]}"
+    text = f"#{my_card[5]}\n\
+{my_card[0]} (ОГРН: {my_card[1]})\n\
+Адрес: {my_card[2]}\n\
+Получатель: {my_card[10]} - {my_card[9]}\n\
+Представитель: {my_card[11]}\n\
+Тел: {my_card[8]}\n\
+Email: {my_card[4]}\n\
+Ссылка: {my_card[12]}"
     await bot.send_message(chat_id=call.message.chat.id, text=text, reply_markup=cont_user_2)
 
 
