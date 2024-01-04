@@ -40,6 +40,8 @@ async def letter_choise_cont_user(message: types.Message, state: FSMContext):
         for i, x in enumerate(lst_template):
             choice.add(InlineKeyboardButton(
                 text=x, callback_data=letter_cont_user_choise.new(id=lst_id[i])))
+        choice.add(InlineKeyboardButton(
+            text="Добавить получателя", callback_data="Добавить получателя"))
         await message.answer("Выберите получателя", reply_markup=choice)
 
 
@@ -88,14 +90,21 @@ user_button2 = InlineKeyboardButton(
 user_button3 = InlineKeyboardButton(text="В начало", callback_data="В начало")
 
 cont_user = InlineKeyboardMarkup().row(
-    user_button1, user_button2).row(user_button3)
+    user_button1, user_button2)
 
 
 user2_button1 = InlineKeyboardButton(
     text="Изменить данные", callback_data="Изменить данные")
 user2_button2 = InlineKeyboardButton(text="В начало", callback_data="В начало")
 
-cont_user_2 = InlineKeyboardMarkup().row(user2_button1).row(user2_button2)
+cont_user_2 = InlineKeyboardMarkup().row(user2_button1)
+
+
+ask_dell_1 = InlineKeyboardButton(
+    text="Да", callback_data="dell_yes")
+ask_dell_2 = InlineKeyboardButton(text="Нет", callback_data="dell_no")
+
+accept_dell = InlineKeyboardMarkup().row(ask_dell_1, ask_dell_2)
 
 
 nest_pars_button = KeyboardButton(

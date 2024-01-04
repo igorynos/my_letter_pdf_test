@@ -30,4 +30,4 @@ async def change_card(message: types.Message):
 button1 = InlineKeyboardButton(text='Изменить', callback_data='Изменить')
 button2 = InlineKeyboardButton(text='В начало', callback_data='В начало')
 
-user_card = InlineKeyboardMarkup().add(button1, button2)
+user_card = InlineKeyboardMarkup().add(button1)

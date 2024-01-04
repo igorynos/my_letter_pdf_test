@@ -20,7 +20,7 @@ from keyboards.inline.change_user_card import change_card
 from keyboards.inline.change_user_card import user_card
 from keyboards.inline.choise_cont_user import choise_cont_user, change_cont_card, nest_pars, cont_user, cont_user_2
 from keyboards.inline.callback_data import template, del_template, change_my_card, cont_user_choise, change_cont_user_choise
-from keyboards.inline.menu_start import menu_start_admin, menu_start_user
+from keyboards.default.menu_start import menu_start_admin, menu_start_user
 
 
 import random
@@ -65,11 +65,11 @@ async def bot_start(message: types.Message, state: FSMContext):
         await message.answer("Напиши своё ФИО")
         await state.set_state("FIO")
     else:
-        print(config.ADMINS)
+        text = "Главное меню"
         if str(message.chat.id) in config.ADMINS:
-            await message.answer(f"Выберите действие:", reply_markup=menu_start_admin)
+            await message.answer(text=text, reply_markup=menu_start_admin)
         else:
-            await message.answer(f"Выберите действие:", reply_markup=menu_start_user)
+            await message.answer(text=text, reply_markup=menu_start_user)
 
 
 @dp.callback_query_handler(text='В начало')
@@ -77,8 +77,8 @@ async def in_start(call: types.CallbackQuery, state: FSMContext):
     await bot_start(message=call.message, state=state)
 
 
-@dp.callback_query_handler(text='Словарь операндов')
-async def dict_oper(call: types.CallbackQuery):
+@dp.message_handler(text='Словарь операндов')
+async def dict_oper(message: types.Message):
     text = "{{fio}} - имя пользователя\n\
 {{adress}} - адрес отправителя\n\
 {{phone}} - ваш номер телефона\n\
@@ -97,29 +97,25 @@ async def dict_oper(call: types.CallbackQuery):
 {{cont_fio}} - ФИО руководителя организации получателя\n\
 {{cont_headstatus}} - должность руководителя организации получателя\n\
 {{cont_fiocont}} - ФИО представителя организации получателя\n\
-{{cont_link}} - ссылкf на организацию получателя\n\
+{{cont_link}} - ссылка на организацию получателя\n\
 {{doc_text}} - дополнительный текст"
-    await call.message.answer(text=text)
-    if str(call.message.chat.id) in config.ADMINS:
-        await call.message.answer(f"Выберите действие:", reply_markup=menu_start_admin)
+    if str(message.chat.id) in config.ADMINS:
+        await message.answer(text=text, reply_markup=menu_start_admin)
     else:
-        await call.message.answer(f"Выберите действие:", reply_markup=menu_start_user)
+        await message.answer(text=text, reply_markup=menu_start_user)
 
 
 @dp.message_handler(state="FIO")
 async def enter_name(message: types.Message, state: FSMContext):
     name = message.text
     db.update_user(name=name, id=message.from_user.id)
-    await message.answer(
-        "\n".join([
-            f"{name} Занесён в базу"
-        ])
-    )
-    await state.finish()
+    text = f"{name} Занесён в базу"
+
     if str(message.chat.id) in config.ADMINS:
-        await message.answer(f"Выберите действие:", reply_markup=menu_start_admin)
+        await message.answer(text=text, reply_markup=menu_start_admin)
     else:
-        await message.answer(f"Выберите действие:", reply_markup=menu_start_user)
+        await message.answer(text=text, reply_markup=menu_start_user)
+    await state.finish()
 
 
 @dp.message_handler(text='Создать письмо')
@@ -127,34 +123,34 @@ async def enter_test(message: types.Message):
     await choice(message)
 
 
-@dp.callback_query_handler(text='Получатели')
-async def enter_test(call: types.CallbackQuery):
-    await choise_cont_user(call.message)
+@dp.message_handler(text='Получатели')
+async def enter_test(message: types.Message):
+    await choise_cont_user(message)
 
 
-@dp.callback_query_handler(text='Добавить шаблон')
-async def new_tamplate(call: types.CallbackQuery, state: FSMContext):
-    await call.message.answer("Название шаблона")
+@dp.message_handler(text='Добавить шаблон')
+async def new_tamplate(message: types.Message, state: FSMContext):
+    await message.answer("Название шаблона")
     await state.set_state("name_tamplate")
 
 
-@dp.callback_query_handler(text='Шаблоны')
-async def tamplates(call: types.CallbackQuery):
-    await bot.send_message(chat_id=call.message.chat.id, text="Выберите действие", reply_markup=menu_template)
+@dp.message_handler(text='Шаблоны')
+async def tamplates(message: types.Message):
+    await bot.send_message(chat_id=message.chat.id, text="Выберите действие", reply_markup=menu_template)
 
 
-@dp.callback_query_handler(text='Удалить шаблон')
-async def delete_tamplate(call: types.CallbackQuery):
-    await delete_choice(call.message)
+@dp.message_handler(text='Удалить шаблон')
+async def delete_tamplate(message: types.Message):
+    await delete_choice(message)
 
 
-@dp.callback_query_handler(text='Мои реквизиты')
-async def my_user_card(call: types.CallbackQuery):
-    sql = f"SELECT * FROM users WHERE id='{call.message.chat.id}'"
+@dp.message_handler(text='Мои реквизиты')
+async def my_user_card(message: types.Message):
+    sql = f"SELECT * FROM users WHERE id='{message.chat.id}'"
     my_card = db.execute(sql, fetchall=True, commit=True)
     my_card = my_card[0]
 
-    text = f"#myinfo (@{call.message.chat.username})\n\n\
+    text = f"#myinfo (@{message.chat.username})\n\n\
 {my_card[1]}\n\
 Адрес: {my_card[3]}\n\
 Тел: {my_card[4]}\n\
@@ -163,7 +159,7 @@ Email: {my_card[5]}\n\
 Паспорт: {my_card[7]}\n\
 Дата рождения: {my_card[8]}\n\
 Комментарий: {my_card[9]}"
-    await bot.send_message(chat_id=call.message.chat.id, text=text, reply_markup=user_card)
+    await bot.send_message(chat_id=message.chat.id, text=text, reply_markup=user_card)
 
 
 @dp.callback_query_handler(cont_user_choise.filter())

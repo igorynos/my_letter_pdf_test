@@ -39,4 +39,4 @@ button2 = InlineKeyboardButton(
     text="Удалить шаблон", callback_data="Удалить шаблон")
 button3 = InlineKeyboardButton(text="В начало", callback_data="В начало")
 
-menu_template = InlineKeyboardMarkup().add(button1, button2, button3)
+menu_template = InlineKeyboardMarkup().add(button1, button2)

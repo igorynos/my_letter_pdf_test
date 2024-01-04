@@ -6,7 +6,6 @@ from .change_user_card import change_card
 from .change_user_card import user_card
 from .choise_cont_user import choise_cont_user
 from .choise_cont_user import change_cont_user_choise
-from .menu_start import menu_start_admin
-from .menu_start import menu_start_user
 from .choise_cont_user import cont_user
 from .choise_cont_user import nest_pars
+from .choise_cont_user import accept_dell

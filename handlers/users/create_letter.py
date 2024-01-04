@@ -16,7 +16,7 @@ import io
 
 
 from keyboards.inline.callback_data import template
-from keyboards.inline.menu_start import menu_start_admin, menu_start_user
+from keyboards.default.menu_start import menu_start_admin, menu_start_user
 from keyboards.inline.choise_template import choice
 from keyboards.inline.choise_cont_user import letter_choise_cont_user
 from keyboards.inline.callback_data import template, letter_cont_user_choise
@@ -41,15 +41,15 @@ from data import config
 
 
 month_dict = {
-    '1': 'января',
-    '2': 'февраля',
-    '3': 'марта',
-    '4': 'апреля',
-    '5': 'мая',
-    '6': 'июня',
-    '7': 'июля',
-    '8': 'августа',
-    '9': 'сентября',
+    '01': 'января',
+    '02': 'февраля',
+    '03': 'марта',
+    '04': 'апреля',
+    '05': 'мая',
+    '06': 'июня',
+    '07': 'июля',
+    '08': 'августа',
+    '09': 'сентября',
     '10': 'октября',
     '11': 'ноября',
     '12': 'декабря'
@@ -226,11 +226,10 @@ async def letter_3(message: types.Message, state: FSMContext):
                     convert(file_name, file_name[:-5] + ".pdf")
                     # command = ['libreoffice', '--convert-to', 'pdf', '--outdir', dir_name, file_name]
                     # subprocess.run(command, check=True)
-                    await bot.send_document(message.chat.id, open(file_name[:-5] + ".pdf", 'rb'))
                     if str(message.chat.id) in config.ADMINS:
-                        await message.answer(f"Выберите действие:", reply_markup=menu_start_admin)
+                        await bot.send_document(message.chat.id, open(file_name[:-5] + ".pdf", 'rb'), reply_markup=menu_start_admin)
                     else:
-                        await message.answer(f"Выберите действие:", reply_markup=menu_start_user)
+                        await bot.send_document(message.chat.id, open(file_name[:-5] + ".pdf", 'rb'), reply_markup=menu_start_user)
 
 
 async def user_none(message: types.Message, state: FSMContext):
