@@ -128,9 +128,9 @@ async def enter_test(message: types.Message):
     await choise_cont_user(message)
 
 
-@dp.message_handler(text='Добавить шаблон')
-async def new_tamplate(message: types.Message, state: FSMContext):
-    await message.answer("Название шаблона")
+@dp.callback_query_handler(text="Добавить шаблон")
+async def new_tamplate(call: types.CallbackQuery, state: FSMContext):
+    await call.message.answer("Название шаблона")
     await state.set_state("name_tamplate")
 
 
@@ -139,9 +139,9 @@ async def tamplates(message: types.Message):
     await bot.send_message(chat_id=message.chat.id, text="Выберите действие", reply_markup=menu_template)
 
 
-@dp.message_handler(text='Удалить шаблон')
-async def delete_tamplate(message: types.Message):
-    await delete_choice(message)
+@dp.callback_query_handler(text='Удалить шаблон')
+async def delete_tamplate(call: types.CallbackQuery,):
+    await delete_choice(call.message)
 
 
 @dp.message_handler(text='Мои реквизиты')

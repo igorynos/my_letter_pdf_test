@@ -82,8 +82,12 @@ async def add_cont_user_1(message: types.Message, state: FSMContext):
         text = f"Получатель {company_info['value']} создан\n\n\
 #{name}\n\
 {company_info['value']} (ОГРН: {company_info['data']['ogrn']})\n\
-Адрес: {company_info['data']['address']['unrestricted_value']}\n\
-Получатель: {company_info['data']['management']['post']} - {company_info['data']['management']['name']}"
+Адрес: {company_info['data']['address' ]['unrestricted_value']}\n\
+Получатель: {company_info['data']['management']['post']} - {company_info['data']['management']['name']}\n\
+Представитель: \n\
+Тел: \n\
+Email: \n\
+Ссылка: "
 
         if str(message.chat.id) in config.ADMINS:
             await message.answer(text=text, reply_markup=menu_start_admin)
@@ -222,7 +226,15 @@ async def add_cont_user_11(message: types.Message, state: FSMContext):
                      id=random.randint(1000000, 9999999),
                      user=message.chat.id)
 
-    text = f"Получатель {data['org']} создан"
+    text = f"Получатель {data['org']} создан\n\n\
+#{data['inn']}\n\
+{data['org']} (ОГРН: {data['ogrn']})\n\
+Адрес: {data['adress']}\n\
+Получатель: {data['headstatus']} - {data['fio']}\n\
+Представитель: {data['fiocont']}\n\
+Тел: {data['phone']}\n\
+Email: {data['email']}\n\
+Ссылка: {data['link']}"
 
     if str(message.chat.id) in config.ADMINS:
         await message.answer(text=text, reply_markup=menu_start_admin)
